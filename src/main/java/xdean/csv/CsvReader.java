@@ -2,12 +2,12 @@ package xdean.csv;
 
 import java.io.InputStream;
 
-import io.reactivex.Flowable;
-
 public interface CsvReader {
-  CsvReader read(InputStream stream);
 
-  CsvReader column(String name, CsvValueParser<?> parser);
+  CsvResult read(InputStream stream);
 
-  <T> Flowable<T> read(CsvRowParser<T> parser);
+  CsvReader splitor(String splitor);
+
+  CsvReader addColumn(CsvColumn<?> column);
+
 }
