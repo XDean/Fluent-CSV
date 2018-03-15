@@ -5,6 +5,7 @@ import static xdean.jex.util.lang.ExceptionUtil.uncatch;
 import static xdean.jex.util.lang.ExceptionUtil.uncheck;
 import static xdean.jex.util.lang.ExceptionUtil.wrapException;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -123,7 +124,7 @@ public class FluentReader implements CsvReader {
 
       public BeanConstructor(Class<T> clz) {
         this.clz = clz;
-        this.hasEmptyConstructor = uncatch(() -> clz.getConstructor().isAccessible()) == Boolean.TRUE;
+        this.hasEmptyConstructor = uncatch(() -> clz.getConstructor()) != null;
       }
 
       private T construct(List<Object> line) throws CsvException {
@@ -135,7 +136,11 @@ public class FluentReader implements CsvReader {
       }
 
       private T constructByField(List<Object> line) throws CsvException {
-        T obj = uncheck(() -> clz.newInstance());
+        T obj = uncheck(() -> {
+          Constructor<T> con = clz.getConstructor();
+          con.setAccessible(true);
+          return con.newInstance();
+        });
         List<Method> methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
         List<Field> fields = Arrays.asList(ReflectUtil.getAllFields(clz, false));
         for (int i = 0; i < columns.size(); i++) {

@@ -26,6 +26,9 @@ public class CsvReaderTest {
     int id;
     String name;
 
+    public Person() {
+    }
+
     @Override
     public String toString() {
       return "Person [id=" + id + ", name=" + name + "]";
