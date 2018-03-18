@@ -17,4 +17,8 @@ public class CsvException extends Exception {
   public CsvException(Throwable cause) {
     super(cause);
   }
+
+  public CsvException(String format, Object... args) {
+    super(String.format(format, args));
+  }
 }
