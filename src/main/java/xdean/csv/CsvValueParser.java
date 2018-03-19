@@ -1,5 +1,7 @@
 package xdean.csv;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 public interface CsvValueParser<T> {
@@ -21,15 +23,28 @@ public interface CsvValueParser<T> {
     };
   }
 
-  static CsvValueParser<Integer> forInt() {
-    return create(Integer.class, Integer::valueOf);
+  CsvValueParser<Integer> INT = Helper.create(Integer.class, Integer::valueOf);
+  CsvValueParser<Double> DOUBLE = Helper.create(Double.class, Double::valueOf);
+  CsvValueParser<String> STRING = Helper.create(String.class, v -> v);
+  CsvValueParser<Boolean> BOOLEAN = Helper.create(Boolean.class, Boolean::valueOf);
+
+  static class Helper {
+    private static final Map<Class<?>, CsvValueParser<?>> DEFAULTS = new HashMap<>();
+
+    private static <T> CsvValueParser<T> create(Class<T> clz, Function<String, T> function) {
+      CsvValueParser<T> parser = CsvValueParser.create(clz, function);
+      DEFAULTS.put(clz, parser);
+      return parser;
+    }
   }
 
-  static CsvValueParser<Double> forDouble() {
-    return create(Double.class, Double::valueOf);
-  }
-
-  static CsvValueParser<String> forString() {
-    return create(String.class, v -> v);
+  @SuppressWarnings("unchecked")
+  static <T> CsvValueParser<? extends T> forType(Class<T> clz) throws CsvException {
+    CsvValueParser<?> parser = Helper.DEFAULTS.get(clz);
+    if (parser == null) {
+      throw new CsvException("Unknown type.");
+    } else {
+      return (CsvValueParser<? extends T>) parser;
+    }
   }
 }
