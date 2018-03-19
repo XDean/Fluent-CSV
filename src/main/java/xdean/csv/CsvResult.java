@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.UnaryOperator;
 
 import io.reactivex.Flowable;
 
@@ -23,17 +24,15 @@ public interface CsvResult {
     });
   }
 
-  <T> Flowable<T> asBean(Class<T> bean);
-
-  interface ResultConfig<T> {
-    Flowable<T> done();
+  default <T> Flowable<T> asBean(Class<T> bean) {
+    return asBean(bean, c -> c);
   }
 
-  interface BeanResultConfig<T> extends ResultConfig<T> {
+  <T> Flowable<T> asBean(Class<T> bean, UnaryOperator<BeanResultConfig<T>> config);
+
+  interface BeanResultConfig<T> {
     <E> BeanResultConfig<T> handle(CsvColumn<E> column, BiConsumer<T, E> setter);
 
-    BeanResultConfig<T> map(String columnName, String propName);
-
-    BeanResultConfig<T> constructor();
+    BeanResultConfig<T> alias(CsvColumn<?> column, String propName);
   }
 }

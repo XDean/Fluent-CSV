@@ -25,11 +25,11 @@ public interface CsvValueParser<T> {
     };
   }
 
+  CsvValueParser<String> STRING = Helper.create(String.class, v -> v);
   CsvValueParser<Integer> INT = Helper.create(Integer.class, Integer::valueOf);
   CsvValueParser<Long> LONG = Helper.create(Long.class, Long::valueOf);
   CsvValueParser<Float> FLOAT = Helper.create(Float.class, Float::valueOf);
   CsvValueParser<Double> DOUBLE = Helper.create(Double.class, Double::valueOf);
-  CsvValueParser<String> STRING = Helper.create(String.class, v -> v);
   CsvValueParser<Boolean> BOOLEAN = Helper.create(Boolean.class, Boolean::valueOf);
 
   static class Helper {
@@ -45,13 +45,19 @@ public interface CsvValueParser<T> {
     }
   }
 
+  static <T extends Enum<T>> CsvValueParser<T> forEnum(Class<T> clz) {
+    return CsvValueParser.create(clz, v -> Enum.valueOf(clz, v));
+  }
+
   @SuppressWarnings("unchecked")
-  static <T> CsvValueParser<? extends T> forType(Class<T> clz) throws CsvException {
+  static <T, K extends Enum<K>> CsvValueParser<? extends T> forType(Class<T> clz) throws CsvException {
     CsvValueParser<?> parser = Helper.DEFAULTS.get(clz);
-    if (parser == null) {
-      throw new CsvException("Unknown type: " + clz);
-    } else {
+    if (parser != null) {
       return (CsvValueParser<? extends T>) parser;
+    } else if (clz.isEnum()) {
+      return (CsvValueParser<? extends T>) forEnum((Class<K>) clz);
+    } else {
+      throw new CsvException("Unknown type: " + clz);
     }
   }
 }

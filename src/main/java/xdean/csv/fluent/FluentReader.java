@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -59,12 +61,6 @@ public class FluentReader implements CsvReader, Logable {
     return this;
   }
 
-  @Override
-  public CsvReader addColumnsFromBean(Class<?> bean) {
-
-    return this;
-  }
-
   private Optional<CsvColumn<?>> findColumn(String name) {
     return columns.stream()
         .filter(c -> Objects.equals(c.name(), name))
@@ -102,9 +98,9 @@ public class FluentReader implements CsvReader, Logable {
     }
 
     @Override
-    public <T> Flowable<T> asBean(Class<T> bean) {
+    public <T> Flowable<T> asBean(Class<T> bean, UnaryOperator<BeanResultConfig<T>> config) {
       try {
-        BeanConstructor<T> con = new BeanConstructor<>(bean);
+        BeanConstructor<T> con = new BeanConstructor<>(bean, config);
         return asList().map(s -> con.construct(s));
       } catch (CsvException e) {
         return Flowable.error(e);
@@ -130,37 +126,58 @@ public class FluentReader implements CsvReader, Logable {
       if (!columnPos.values().containsAll(columns)) {
         List<CsvColumn<?>> missed = new ArrayList<>(columns);
         missed.removeAll(columnPos.values());
-        throw new CsvException(missed.stream().map(c -> c.name()).collect(Collectors.joining(", ")) + " not found.");
+        throw new CsvException(
+            "Column [" + missed.stream().map(c -> c.name()).collect(Collectors.joining(", ")) + "] not found.");
       }
     }
 
     private List<Object> parse(String line) {
-      String[] split = line.split(regexSplitor);
+      String[] split = (splitor + line + splitor).split(regexSplitor);
       Object[] result = new Object[columns.size()];
       for (int i = 0; i < split.length; i++) {
         CsvColumn<?> column = columnPos.get(i);
         if (column != null) {
-          Object value = column.parser().parse(split[i].trim());
+          String str = split[i].trim();
+          if (str.isEmpty()) {
+            continue;
+          }
+          Object value = column.parser().parse(str);
           result[columns.indexOf(column)] = value;
         }
       }
       return Arrays.asList(result);
     }
 
-    private class BeanConstructor<T> {
+    private class BeanConstructor<T> implements BeanResultConfig<T> {
       private final Class<T> clz;
       private final List<Method> methods;
       private final List<Field> fields;
+      private final Map<CsvColumn<?>, BiConsumer<T, Object>> customHandlers = new HashMap<>();
       private final Map<CsvColumn<?>, ActionE2<T, Object, Exception>> annoHandlers = new HashMap<>();
+      private final Map<CsvColumn<?>, String> aliases = new HashMap<>();
 
-      public BeanConstructor(Class<T> clz) throws CsvException {
+      public BeanConstructor(Class<T> clz, UnaryOperator<BeanResultConfig<T>> config) throws CsvException {
         if (uncatch(() -> clz.getDeclaredConstructor()) == null) {
           throw new CsvException("");
         }
         this.clz = clz;
         this.methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
         this.fields = Arrays.asList(ReflectUtil.getAllFields(clz, false));
+        config.apply(this);
         prepare();
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public <E> BeanResultConfig<T> handle(CsvColumn<E> column, BiConsumer<T, E> setter) {
+        customHandlers.put(column, (BiConsumer<T, Object>) setter);
+        return this;
+      }
+
+      @Override
+      public BeanResultConfig<T> alias(CsvColumn<?> column, String propName) {
+        aliases.put(column, propName);
+        return this;
       }
 
       private void prepare() throws CsvException {
@@ -191,7 +208,7 @@ public class FluentReader implements CsvReader, Logable {
             continue;
           }
           assertTrue(m.getParameterCount() == 1, "@CSV method must have 1 parameter. Invalid method: %s", m);
-          assertTrue(m.isAccessible(), "@CSV method must be public. Invalid method: %s", m);
+          assertTrue(Modifier.isPublic(m.getModifiers()), "@CSV method must be public. Invalid method: %s", m);
           String name = getOrDefault(csv.name(), "", () -> {
             String n = m.getName();
             if (n.startsWith("set") && n.length() > 3 && Character.isUpperCase(n.charAt(3))) {
@@ -199,7 +216,7 @@ public class FluentReader implements CsvReader, Logable {
             }
             return n;
           });
-          Class<?> type = PrimitiveTypeUtil.toWrapper(getOrDefault(csv.type(), void.class, m::getReturnType));
+          Class<?> type = PrimitiveTypeUtil.toWrapper(getOrDefault(csv.type(), void.class, () -> m.getParameterTypes()[0]));
           CsvValueParser<?> parser = firstNonNull(
               () -> getOrDefault(csv.parser(), CsvValueParser.class, null).newInstance(),
               () -> CsvValueParser.forType(type))
@@ -228,7 +245,10 @@ public class FluentReader implements CsvReader, Logable {
         for (int i = 0; i < columns.size(); i++) {
           CsvColumn<?> column = columns.get(i);
           Object value = line.get(i);
-          if (injectByAnno(obj, column, value)) {
+
+          if (injectByCustom(obj, column, value)) {
+            debug(format("Set property %s by custom handler.", column.name()));
+          } else if (injectByAnno(obj, column, value)) {
             debug(format("Set property %s by annotation.", column.name()));
           } else if (injectBySetter(obj, column, value)) {
             debug(format("Set property %s by setter.", column.name()));
@@ -239,6 +259,19 @@ public class FluentReader implements CsvReader, Logable {
           }
         }
         return obj;
+      }
+
+      private boolean injectByCustom(T obj, CsvColumn<?> column, Object value) {
+        BiConsumer<T, Object> handler = customHandlers.get(column);
+        if (handler == null) {
+          return false;
+        }
+        try {
+          handler.accept(obj, value);
+          return true;
+        } catch (Exception e) {
+          return false;
+        }
       }
 
       private boolean injectByAnno(T obj, CsvColumn<?> column, Object value) {

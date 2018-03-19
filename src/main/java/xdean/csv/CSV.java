@@ -18,4 +18,8 @@ public @interface CSV {
 
   @SuppressWarnings("rawtypes")
   Class<? extends CsvValueParser> parser() default CsvValueParser.class;
+
+  String defaultValue() default "";
+
+  boolean optional() default false;
 }

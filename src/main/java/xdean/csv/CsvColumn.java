@@ -9,6 +9,10 @@ public interface CsvColumn<T> {
 
   CsvValueParser<T> parser();
 
+  default boolean optional() {
+    return false;
+  }
+
   static <T> CsvColumn<T> create(String name, CsvValueParser<T> parser) {
     return new CsvColumn<T>() {
       @Override

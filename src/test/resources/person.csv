@@ -1,5 +1,5 @@
 ## person.csv
-id, name
-1, dean
-2, wen-zhe
-3, xian
+id, name, money, has_house, extra
+1, dean, 100, NO,
+2, wen-zhe, 888, YES,
+3, xian, 998, YES, manager
