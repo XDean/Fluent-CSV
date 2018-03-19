@@ -15,15 +15,16 @@ public class CsvReaderTest {
   public void test() throws Exception {
     Path golden = Paths.get(getClass().getClassLoader().getResource("person.csv").toURI());
     reader.splitor(",")
-        .addColumn(CsvColumn.create("id", CsvValueParser.forInt()))
-        .addColumn(CsvColumn.create("name", CsvValueParser.forString()))
         .read(Files.newInputStream(golden))
         .asBean(Person.class)
         .forEach(p -> System.out.println(p));
   }
 
   public static class Person {
+    @CSV
     int id;
+
+    @CSV
     String name;
 
     public Person() {

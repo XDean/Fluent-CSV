@@ -3,7 +3,9 @@ package xdean.csv;
 public interface CsvColumn<T> {
   String name();
 
-  Class<T> type();
+  default Class<T> type(){
+    return parser().type();
+  }
 
   CsvValueParser<T> parser();
 
@@ -12,11 +14,6 @@ public interface CsvColumn<T> {
       @Override
       public String name() {
         return name;
-      }
-
-      @Override
-      public Class<T> type() {
-        return parser.type();
       }
 
       @Override
