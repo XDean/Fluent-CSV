@@ -1,7 +1,9 @@
 package xdean.csv;
 
-public class CsvException extends Exception {
+import xdean.codecov.CodecovIgnore;
 
+@CodecovIgnore
+public class CsvException extends Exception {
   public CsvException() {
     super();
   }

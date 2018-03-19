@@ -9,9 +9,9 @@ import java.util.function.UnaryOperator;
 
 public interface CsvConfig {
 
-  CsvConfig splitor(String splitor);
+  CsvConfig splitor(String splitor) throws IllegalArgumentException;
 
-  CsvConfig addColumn(CsvColumn<?> column);
+  CsvConfig addColumn(CsvColumn<?> column) throws IllegalArgumentException;
 
   default CsvConfig addColumns(CsvColumn<?>... columns) {
     Arrays.stream(columns).forEach(this::addColumn);

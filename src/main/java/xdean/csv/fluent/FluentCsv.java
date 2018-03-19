@@ -172,7 +172,7 @@ public class FluentCsv implements CsvConfig, Logable {
 
     public BeanConstructor(Class<T> clz, UnaryOperator<BeanResultConfig<T>> config) throws CsvException {
       if (uncatch(() -> clz.getDeclaredConstructor()) == null) {
-        throw new CsvException("");
+        throw new CsvException("Bean must declare no-arg constructor.");
       }
       this.clz = clz;
       this.methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
@@ -261,7 +261,7 @@ public class FluentCsv implements CsvConfig, Logable {
       }
     }
 
-    private <V> V getOrDefault(V value, V useDefault, Supplier<V> def){
+    private <V> V getOrDefault(V value, V useDefault, Supplier<V> def) {
       return value.equals(useDefault) ? def.get() : value;
     }
 
@@ -274,7 +274,9 @@ public class FluentCsv implements CsvConfig, Logable {
       for (int i = 0; i < columns.size(); i++) {
         CsvColumn<?> column = columns.get(i);
         Object value = line.get(i);
-        if (injectByCustom(obj, column, value)) {
+        if (value == null) {
+          continue;
+        } else if (injectByCustom(obj, column, value)) {
           debug(format("Set property %s by custom handler.", column.name()));
         } else if (injectByAnno(obj, column, value)) {
           debug(format("Set property %s by annotation.", column.name()));
