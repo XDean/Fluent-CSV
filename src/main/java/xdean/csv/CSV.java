@@ -19,7 +19,7 @@ public @interface CSV {
   @SuppressWarnings("rawtypes")
   Class<? extends CsvValueParser> parser() default CsvValueParser.class;
 
-  String defaultValue() default "";
+  String defaultValue() default "defaultValue";
 
   boolean optional() default false;
 }

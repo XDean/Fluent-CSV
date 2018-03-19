@@ -26,9 +26,10 @@ public class CsvReaderTest {
   CsvReader reader;
   Path golden;
   CsvColumn<Integer> id = CsvColumn.create("id", CsvValueParser.INT);
-  CsvColumn<String> name = CsvColumn.create("name", CsvValueParser.STRING);
+  CsvColumn<String> name = CsvColumn.create("name", new UpperParser());
   CsvColumn<Double> money = CsvColumn.create("money", CsvValueParser.DOUBLE);
   CsvColumn<House> house = CsvColumn.create("has_house", CsvValueParser.forEnum(House.class));
+  CsvColumn<String> extra = CsvColumn.create("extra", CsvValueParser.STRING, () -> "");
 
   @Before
   public void setup() throws Exception {
@@ -46,6 +47,7 @@ public class CsvReaderTest {
         .addColumn(money)
         .read(Files.newInputStream(golden))
         .asBean(Person.class)
+        .doOnError(e -> e.printStackTrace())
         .test()
         .assertNoErrors()
         .assertValueCount(3)
@@ -75,24 +77,25 @@ public class CsvReaderTest {
   @SuppressWarnings("unchecked")
   public void testAsMap() throws Exception {
     reader
-        .addColumns(id, money, name, house)
+        .addColumns(id, money, name, house, extra)
         .read(Files.newInputStream(golden))
         .asMap()
         .test()
         .assertNoErrors()
         .assertValueCount(3)
         .assertValues(
-            createMap(dean),
-            createMap(wenzhe),
-            createMap(xian));
+            asMap(dean),
+            asMap(wenzhe),
+            asMap(xian));
   }
 
-  private Map<CsvColumn<?>, Object> createMap(Person p) {
+  private Map<CsvColumn<?>, Object> asMap(Person p) {
     return ImmutableMap.of(
         this.id, p.id,
-        this.name, p.name.toLowerCase(),
+        this.name, p.name,
         this.money, p.money,
-        this.house, p.house);
+        this.house, p.house,
+        this.extra, p.extra);
   }
 
   public static class UpperParser implements CsvValueParser<String> {

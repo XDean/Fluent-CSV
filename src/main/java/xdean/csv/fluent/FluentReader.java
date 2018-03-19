@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -78,6 +79,7 @@ public class FluentReader implements CsvReader, Logable {
     private final String regexSplitor;
     private List<String> header;
     private Map<Integer, CsvColumn<?>> columnPos;
+    private List<CsvColumn<?>> missedColumns;
 
     public FluentResult(Flowable<String> lines, List<CsvColumn<?>> columns, String splitor) {
       this.lines = lines.map(String::trim)
@@ -120,31 +122,44 @@ public class FluentReader implements CsvReader, Logable {
       for (int i = 0; i < header.size(); i++) {
         String name = header.get(i);
         CsvColumn<?> column = columns.stream().filter(c -> Objects.equals(c.name(), name)).findFirst().orElse(null);
-        columnPos.put(i, column);
+        if (column != null) {
+          columnPos.put(i, column);
+        }
       }
       columnPos = Collections.unmodifiableMap(columnPos);
-      if (!columnPos.values().containsAll(columns)) {
-        List<CsvColumn<?>> missed = new ArrayList<>(columns);
-        missed.removeAll(columnPos.values());
+      List<CsvColumn<?>> requireds = new ArrayList<>(columns);
+      requireds.removeIf(c -> c.optional());
+      if (!columnPos.values().containsAll(requireds)) {
+        requireds.removeAll(columnPos.values());
         throw new CsvException(
-            "Column [" + missed.stream().map(c -> c.name()).collect(Collectors.joining(", ")) + "] not found.");
+            "Column [" + requireds.stream().map(c -> c.name()).collect(Collectors.joining(", ")) + "] not found.");
       }
+      missedColumns = columns.stream()
+          .filter(c -> !columnPos.containsValue(c))
+          .filter(c -> c.defaultValue() != null)
+          .collect(Collectors.toList());
     }
 
     private List<Object> parse(String line) {
-      String[] split = (splitor + line + splitor).split(regexSplitor);
+      String[] split = line.split(regexSplitor);
       Object[] result = new Object[columns.size()];
-      for (int i = 0; i < split.length; i++) {
+      for (int i = 0; i < result.length; i++) {
         CsvColumn<?> column = columnPos.get(i);
         if (column != null) {
-          String str = split[i].trim();
+          String str = split.length > i ? split[i].trim() : "";
+          Object value;
           if (str.isEmpty()) {
-            continue;
+            if (column.defaultValue() == null) {
+              continue;
+            }
+            value = column.defaultValue().get();
+          } else {
+            value = column.parser().parse(str);
           }
-          Object value = column.parser().parse(str);
           result[columns.indexOf(column)] = value;
         }
       }
+      missedColumns.forEach(c -> result[columns.indexOf(c)] = c.defaultValue().get());
       return Arrays.asList(result);
     }
 
@@ -180,7 +195,8 @@ public class FluentReader implements CsvReader, Logable {
         return this;
       }
 
-      private void prepare() throws CsvException {
+      @SuppressWarnings("unchecked")
+      private <K> void prepare() throws CsvException {
         for (Field f : fields) {
           CSV csv = f.getAnnotation(CSV.class);
           if (csv == null) {
@@ -188,15 +204,22 @@ public class FluentReader implements CsvReader, Logable {
           }
           String name = getOrDefault(csv.name(), "", f::getName);
           Class<?> type = PrimitiveTypeUtil.toWrapper(getOrDefault(csv.type(), void.class, f::getType));
-          CsvValueParser<?> parser = firstNonNull(
+          CsvValueParser<K> parser = firstNonNull(
               () -> getOrDefault(csv.parser(), CsvValueParser.class, null).newInstance(),
               () -> CsvValueParser.forType(type))
                   .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-          if (!type.isAssignableFrom(parser.type())) {
-            throw new CsvException("CsvValueParser is not matched to the type: %s.", csv);
+          assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", csv);
+          String defaultStr = csv.defaultValue();
+          Supplier<K> defaultSupplier;
+          if (defaultStr.equals("defaultValue")) {
+            defaultSupplier = null;
+          } else {
+            K defaultValue = parser.parse(defaultStr);
+            defaultSupplier = () -> defaultValue;
           }
+          boolean optional = csv.optional();
           OptionalUtil.ifEmpty(findColumn(name), () -> {
-            CsvColumn<?> column = CsvColumn.create(name, parser);
+            CsvColumn<?> column = CsvColumn.create(name, parser, defaultSupplier, optional);
             addColumn(column);
             f.setAccessible(true);
             annoHandlers.put(column, (obj, v) -> f.set(obj, v));
@@ -217,15 +240,22 @@ public class FluentReader implements CsvReader, Logable {
             return n;
           });
           Class<?> type = PrimitiveTypeUtil.toWrapper(getOrDefault(csv.type(), void.class, () -> m.getParameterTypes()[0]));
-          CsvValueParser<?> parser = firstNonNull(
+          CsvValueParser<K> parser = firstNonNull(
               () -> getOrDefault(csv.parser(), CsvValueParser.class, null).newInstance(),
               () -> CsvValueParser.forType(type))
                   .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-          if (!type.isAssignableFrom(parser.type())) {
-            throw new CsvException("CsvValueParser is not matched to the type: %s.", csv);
+          assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", csv);
+          String defaultStr = csv.defaultValue();
+          Supplier<K> defaultSupplier;
+          if (defaultStr.equals("defaultValue")) {
+            defaultSupplier = null;
+          } else {
+            K defaultValue = parser.parse(defaultStr);
+            defaultSupplier = () -> defaultValue;
           }
+          boolean optional = csv.optional();
           OptionalUtil.ifEmpty(findColumn(name), () -> {
-            CsvColumn<?> column = CsvColumn.create(name, parser);
+            CsvColumn<?> column = CsvColumn.create(name, parser, defaultSupplier, optional);
             addColumn(column);
             annoHandlers.put(column, (obj, v) -> m.invoke(obj, v));
           });
@@ -245,7 +275,6 @@ public class FluentReader implements CsvReader, Logable {
         for (int i = 0; i < columns.size(); i++) {
           CsvColumn<?> column = columns.get(i);
           Object value = line.get(i);
-
           if (injectByCustom(obj, column, value)) {
             debug(format("Set property %s by custom handler.", column.name()));
           } else if (injectByAnno(obj, column, value)) {
@@ -270,6 +299,7 @@ public class FluentReader implements CsvReader, Logable {
           handler.accept(obj, value);
           return true;
         } catch (Exception e) {
+          debug("Fail to inject by custom handler.", e);
           return false;
         }
       }
@@ -283,6 +313,7 @@ public class FluentReader implements CsvReader, Logable {
           handler.call(obj, value);
           return true;
         } catch (Exception e) {
+          debug("Fail to inject by anno.", e);
           return false;
         }
       }
