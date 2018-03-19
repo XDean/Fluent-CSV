@@ -32,7 +32,6 @@ import xdean.csv.CsvException;
 import xdean.csv.CsvReader;
 import xdean.csv.CsvValueParser;
 import xdean.jex.extra.function.ActionE2;
-import xdean.jex.extra.function.FuncE0;
 import xdean.jex.log.Logable;
 import xdean.jex.util.OptionalUtil;
 import xdean.jex.util.lang.PrimitiveTypeUtil;
@@ -262,8 +261,8 @@ public class FluentCsv implements CsvConfig, Logable {
       }
     }
 
-    private <V, E extends Exception> V getOrDefault(V value, V useDefault, FuncE0<V, E> def) throws E {
-      return value.equals(useDefault) ? def.call() : value;
+    private <V> V getOrDefault(V value, V useDefault, Supplier<V> def){
+      return value.equals(useDefault) ? def.get() : value;
     }
 
     private T construct(List<Object> line) throws CsvException {
