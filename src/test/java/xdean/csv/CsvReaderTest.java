@@ -16,14 +16,14 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 
 import xdean.csv.CsvReaderTest.Person.House;
-import xdean.csv.fluent.FluentReader;
+import xdean.csv.fluent.FluentCsv;
 
 public class CsvReaderTest {
   private static final Person dean = new Person(1, "DEAN", 100, House.NO, "");
   private static final Person wenzhe = new Person(2, "WEN-ZHE", 888, House.YES, "");
   private static final Person xian = new Person(3, "XIAN", 998, House.YES, "manager");
 
-  CsvReader reader;
+  CsvConfig reader;
   Path golden;
   CsvColumn<Integer> id = CsvColumn.create("id", CsvValueParser.INT);
   CsvColumn<String> name = CsvColumn.create("name", new UpperParser());
@@ -33,7 +33,7 @@ public class CsvReaderTest {
 
   @Before
   public void setup() throws Exception {
-    reader = new FluentReader();
+    reader = new FluentCsv();
     golden = getGolden("person.csv");
   }
 
@@ -45,8 +45,8 @@ public class CsvReaderTest {
   public void test() throws Exception {
     reader
         .addColumn(money)
-        .read(Files.newInputStream(golden))
         .asBean(Person.class)
+        .read(Files.newInputStream(golden))
         .doOnError(e -> e.printStackTrace())
         .test()
         .assertNoErrors()
@@ -62,8 +62,8 @@ public class CsvReaderTest {
     golden = getGolden("person_use_space.csv");
     reader.splitor(" ")
         .addColumn(money)
-        .read(Files.newInputStream(golden))
         .asBean(Person.class)
+        .read(Files.newInputStream(golden))
         .test()
         .assertNoErrors()
         .assertValueCount(3)
@@ -78,8 +78,8 @@ public class CsvReaderTest {
   public void testAsMap() throws Exception {
     reader
         .addColumns(id, money, name, house, extra)
-        .read(Files.newInputStream(golden))
         .asMap()
+        .read(Files.newInputStream(golden))
         .test()
         .assertNoErrors()
         .assertValueCount(3)

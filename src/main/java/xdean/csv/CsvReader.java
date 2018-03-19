@@ -4,32 +4,28 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Arrays;
 
 import io.reactivex.Flowable;
+import io.reactivex.functions.Function;
 
-public interface CsvReader {
+@FunctionalInterface
+public interface CsvReader<T> {
 
-  CsvReader splitor(String splitor);
+  Flowable<T> read(Flowable<String> lines);
 
-  CsvReader addColumn(CsvColumn<?> column);
-
-  default CsvReader addColumns(CsvColumn<?>... columns) {
-    Arrays.stream(columns).forEach(this::addColumn);
-    return this;
+  default <R> CsvReader<R> map(Function<T, R> func) {
+    return lines -> read(lines).map(func);
   }
 
-  CsvResult read(Flowable<String> lines);
-
-  default CsvResult read(String input) {
+  default Flowable<T> read(String input) {
     return read(Flowable.fromArray(input.split("\\R")));
   }
 
-  default CsvResult read(InputStream stream) {
+  default Flowable<T> read(InputStream stream) {
     return read(new InputStreamReader(stream));
   }
 
-  default CsvResult read(Reader stream) {
+  default Flowable<T> read(Reader stream) {
     BufferedReader reader = new BufferedReader(stream);
     return read(Flowable.generate(e -> {
       String line = reader.readLine();
