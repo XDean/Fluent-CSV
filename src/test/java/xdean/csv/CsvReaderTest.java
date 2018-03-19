@@ -14,8 +14,7 @@ public class CsvReaderTest {
   @Test
   public void test() throws Exception {
     Path golden = Paths.get(getClass().getClassLoader().getResource("person.csv").toURI());
-    reader.splitor(",")
-        .read(Files.newInputStream(golden))
+    reader.read(Files.newInputStream(golden))
         .asBean(Person.class)
         .forEach(p -> System.out.println(p));
   }
@@ -26,9 +25,6 @@ public class CsvReaderTest {
 
     @CSV
     String name;
-
-    public Person() {
-    }
 
     @Override
     public String toString() {
