@@ -1,5 +1,6 @@
 package xdean.csv.fluent;
 
+import static java.lang.String.format;
 import static xdean.jex.util.lang.ExceptionUtil.uncatch;
 import static xdean.jex.util.lang.ExceptionUtil.uncheck;
 
@@ -22,7 +23,7 @@ import xdean.csv.CsvColumn;
 import xdean.csv.CsvException;
 import xdean.csv.CsvReader;
 import xdean.csv.CsvResult;
-import xdean.jex.util.log.Logable;
+import xdean.jex.log.Logable;
 import xdean.jex.util.reflect.ReflectUtil;
 
 public class FluentReader implements CsvReader, Logable {
@@ -144,10 +145,11 @@ public class FluentReader implements CsvReader, Logable {
           CsvColumn<?> column = columns.get(i);
           Object value = line.get(i);
           if (injectByAnno()) {
+            trace(format("Set property %s by annotation.", column.name()));
           } else if (injectBySetter(obj, column, value)) {
-            trace().log("Set property '{0}' by setter.", column.name());
+            trace(format("Set property %s by setter.", column.name()));
           } else if (injectByField(obj, column, value)) {
-            trace().log("Set property '{0}' by field.", column.name());
+            trace(format("Set property %s by field.", column.name()));
           } else {
             throw new CsvException("Can't find property for %s.", column.name());
           }
@@ -156,6 +158,7 @@ public class FluentReader implements CsvReader, Logable {
       }
 
       private boolean injectByAnno() {
+        // TODO
         return false;
       }
 
