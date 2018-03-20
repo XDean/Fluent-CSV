@@ -55,8 +55,9 @@ public class FluentCsv implements CsvConfig, Logable {
 
   @Override
   public CsvConfig addColumn(CsvColumn<?> column) {
-    findColumn(column.name())
-        .ifPresent(c -> Util.throwIt(new IllegalArgumentException("Column " + column.name() + " already exists.")));
+    if (findColumn(column.name()).isPresent()) {
+      throw new IllegalArgumentException("Column " + column.name() + " already exists.");
+    }
     columns.add(column);
     return this;
   }
@@ -67,7 +68,7 @@ public class FluentCsv implements CsvConfig, Logable {
   }
 
   @Override
-  public <T> CsvReader<T> asBean(Class<T> bean, UnaryOperator<BeanResultConfig<T>> config) {
+  public <T> CsvReader<T> asBean(Class<T> bean, UnaryOperator<BeanConfig<T>> config) {
     try {
       BeanConstructor<T> con = new BeanConstructor<>(bean, config);
       return asList().map(s -> con.construct(s));
@@ -162,39 +163,39 @@ public class FluentCsv implements CsvConfig, Logable {
     }
   }
 
-  private class BeanConstructor<T> implements BeanResultConfig<T> {
+  @SuppressWarnings("unchecked")
+  private class BeanConstructor<T> implements BeanConfig<T> {
     private final Class<T> clz;
     private final List<Method> methods;
     private final List<Field> fields;
     private final Map<CsvColumn<?>, BiConsumer<T, Object>> customHandlers = new HashMap<>();
     private final Map<CsvColumn<?>, ActionE2<T, Object, Exception>> annoHandlers = new HashMap<>();
-    private final Map<CsvColumn<?>, String> aliases = new HashMap<>();
 
-    public BeanConstructor(Class<T> clz, UnaryOperator<BeanResultConfig<T>> config) throws CsvException {
+    public BeanConstructor(Class<T> clz, UnaryOperator<BeanConfig<T>> config) throws CsvException {
       if (uncatch(() -> clz.getDeclaredConstructor()) == null) {
         throw new CsvException("Bean must declare no-arg constructor.");
       }
       this.clz = clz;
       this.methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
       this.fields = Arrays.asList(ReflectUtil.getAllFields(clz, false));
-      config.apply(this);
       prepare();
+      config.apply(this);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public <E> BeanResultConfig<T> handle(CsvColumn<E> column, BiConsumer<T, E> setter) {
-      customHandlers.put(column, (BiConsumer<T, Object>) setter);
+    public <E> BeanConfig<T> addHandler(CsvColumn<E> column, BiConsumer<T, E> setter) {
+      if (columns.contains(column)) {
+        customHandlers.put(column, (BiConsumer<T, Object>) setter);
+      }
       return this;
     }
 
     @Override
-    public BeanResultConfig<T> alias(CsvColumn<?> column, String propName) {
-      aliases.put(column, propName);
+    public <E> BeanConfig<T> addHandler(String column, BiConsumer<T, E> setter) {
+      findColumn(column).ifPresent(c -> customHandlers.put(c, (BiConsumer<T, Object>) setter));
       return this;
     }
 
-    @SuppressWarnings("unchecked")
     private <K> void prepare() throws CsvException {
       for (Field f : fields) {
         CSV csv = f.getAnnotation(CSV.class);

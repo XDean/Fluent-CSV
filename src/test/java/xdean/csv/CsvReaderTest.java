@@ -1,10 +1,9 @@
 package xdean.csv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 import static xdean.csv.CsvColumn.create;
 
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -16,6 +15,7 @@ import com.google.common.collect.ImmutableMap;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import xdean.csv.CsvReaderTest.Person.House;
 import xdean.csv.fluent.FluentCsv;
@@ -62,9 +62,9 @@ public class CsvReaderTest {
         .assertNoErrors()
         .assertValueCount(3)
         .assertValues(
-            new A(1, 2f),
-            new A(0, 3f),
-            new A(4, 0f));
+            new A(1, 2f, 0),
+            new A(0, 3f, 0),
+            new A(4, 0f, 0));
   }
 
   @Test
@@ -94,11 +94,86 @@ public class CsvReaderTest {
 
   @Test
   public void testNoConstructor() throws Exception {
-    reader.asBean(B.class)
+    class TNC {
+    }
+    reader.asBean(TNC.class)
         .read("")
         .test()
         .assertError(CsvException.class)
         .assertErrorMessage("Bean must declare no-arg constructor.");
+  }
+
+  @Test
+  public void testMissColumn() throws Exception {
+    reader
+        .asBean(A.class)
+        .read("a\n1\n3\n4")
+        .test()
+        .assertError(CsvException.class)
+        .assertErrorMessage("Column [b] not found.");
+  }
+
+  @Test
+  public void testOptional() throws Exception {
+    reader
+        .asBean(C.class)
+        .read("a\n1\n3\n4")
+        .test()
+        .assertNoErrors()
+        .assertValueCount(3)
+        .assertValues(
+            new C(1, 3.14f, 0),
+            new C(3, 3.14f, 0),
+            new C(4, 3.14f, 0));
+  }
+
+  @Test
+  public void testCustomHandler() throws Exception {
+    reader
+        .addColumn(A.C)
+        .asBean(A.class, b -> b
+            .<Integer> addHandler("a", (o, v) -> o.setAPlus5(v))
+            .addHandler(A.C, (o, v) -> o.c = v + 100))
+        .read("a,b,c\n1,2,-1\n3,4,-2")
+        .test()
+        .assertNoErrors()
+        .assertValueCount(2)
+        .assertValues(
+            new A(6, 2f, 99),
+            new A(8, 4f, 98));
+  }
+
+  @Test
+  public void testWrongParser() throws Exception {
+    reader.asBean(TWP.class)
+        .read("")
+        .test()
+        .assertError(CsvException.class)
+        .assertError(t -> t.getMessage().startsWith("Can't construct CsvValueParser from"));
+  }
+
+  @Test
+  public void testSetter() throws Exception {
+    reader
+        .addColumns(B.A, B.B)
+        .asBean(B.class)
+        .read("a,b\n1,2\n3,4")
+        .test()
+        .assertValueCount(2)
+        .assertValues(
+            new B(1, 2f),
+            new B(3, 4f));
+  }
+
+  @Test
+  public void testCsvName() throws Exception {
+    reader.asBean(D.class)
+        .read("a,b\n1\n2,3")
+        .test()
+        .assertValueCount(2)
+        .assertValues(
+            new D(1, 100),
+            new D(2, 3));
   }
 
   public static class UpperParser implements CsvValueParser<String> {
@@ -117,12 +192,22 @@ public class CsvReaderTest {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class A {
+    public static final CsvColumn<Integer> C = create("c", CsvValueParser.INT);
     @CSV
     int a;
     @CSV
     float b;
+
+    int c;
+
+    public void setAPlus5(int a) {
+      this.a = a + 5;
+    }
   }
 
+  @EqualsAndHashCode
+  @AllArgsConstructor
+  @NoArgsConstructor
   public static class B {
     public static final CsvColumn<Integer> A = create("a", CsvValueParser.INT);
     public static final CsvColumn<Float> B = create("b", CsvValueParser.FLOAT);
@@ -133,8 +218,47 @@ public class CsvReaderTest {
           B, b);
     }
 
-    private B(int i) {
+    int a;
+    float b;
+
+    public void setA(int a) {
+      this.a = a;
     }
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class C {
+    @CSV
+    int a;
+    @CSV(optional = true, defaultValue = "3.14")
+    float b;
+    @CSV(optional = true)
+    int c;
+  }
+
+  @EqualsAndHashCode
+  @NoArgsConstructor
+  @AllArgsConstructor
+  static class D {
+    int a;
+    int b;
+
+    @CSV
+    public void setA(int a) {
+      this.a = a;
+    }
+
+    @CSV(defaultValue = "100")
+    public void b(int b) {
+      this.b = b;
+    }
+  }
+
+  static class TWP {
+    @CSV
+    TWP twp;
   }
 
   @Data

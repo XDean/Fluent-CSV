@@ -37,11 +37,11 @@ public interface CsvConfig {
     return asBean(bean, c -> c);
   }
 
-  <T> CsvReader<T> asBean(Class<T> bean, UnaryOperator<BeanResultConfig<T>> config);
+  <T> CsvReader<T> asBean(Class<T> bean, UnaryOperator<BeanConfig<T>> config);
 
-  interface BeanResultConfig<T> {
-    <E> BeanResultConfig<T> handle(CsvColumn<E> column, BiConsumer<T, E> setter);
+  interface BeanConfig<T> {
+    <E> BeanConfig<T> addHandler(CsvColumn<E> column, BiConsumer<T, E> setter);
 
-    BeanResultConfig<T> alias(CsvColumn<?> column, String propName);
+    <E> BeanConfig<T> addHandler(String column, BiConsumer<T, E> setter);
   }
 }
