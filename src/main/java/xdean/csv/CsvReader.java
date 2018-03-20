@@ -14,27 +14,27 @@ import io.reactivex.functions.Function;
 @FunctionalInterface
 public interface CsvReader<T> {
 
-  Flowable<T> read(Flowable<String> lines);
+  Flowable<T> from(Flowable<String> lines);
 
   default <R> CsvReader<R> map(Function<T, R> func) {
-    return lines -> read(lines).map(func);
+    return lines -> from(lines).map(func);
   }
 
-  default Flowable<T> read(String input) {
-    return read(Flowable.fromArray(input.split("\\R")));
+  default Flowable<T> from(String input) {
+    return from(Flowable.fromArray(input.split("\\R")));
   }
 
-  default Flowable<T> read(Path path) throws IOException {
-    return read(Files.newInputStream(path));
+  default Flowable<T> from(Path path) throws IOException {
+    return from(Files.newInputStream(path));
   }
 
-  default Flowable<T> read(InputStream stream) {
-    return read(new InputStreamReader(stream));
+  default Flowable<T> from(InputStream stream) {
+    return from(new InputStreamReader(stream));
   }
 
-  default Flowable<T> read(Reader stream) {
+  default Flowable<T> from(Reader stream) {
     BufferedReader reader = new BufferedReader(stream);
-    return read(Flowable.generate(e -> {
+    return from(Flowable.generate(e -> {
       String line = reader.readLine();
       if (line == null) {
         e.onComplete();

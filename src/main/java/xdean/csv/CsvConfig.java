@@ -1,11 +1,14 @@
 package xdean.csv;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 public interface CsvConfig {
 
@@ -20,11 +23,12 @@ public interface CsvConfig {
 
   List<CsvColumn<?>> columns();
 
-  CsvReader<List<Object>> asList();
+  /********************************** Read ************************************/
+  CsvReader<List<Object>> readList();
 
-  default CsvReader<Map<CsvColumn<?>, Object>> asMap() {
+  default CsvReader<Map<CsvColumn<?>, Object>> readMap() {
     List<CsvColumn<?>> columns = columns();
-    return asList().map(l -> {
+    return readList().map(l -> {
       Map<CsvColumn<?>, Object> map = new LinkedHashMap<>();
       for (int i = 0; i < columns.size(); i++) {
         map.put(columns.get(i), l.get(i));
@@ -33,15 +37,36 @@ public interface CsvConfig {
     });
   }
 
-  default <T> CsvReader<T> asBean(Class<T> bean) {
-    return asBean(bean, c -> c);
+  default <T> CsvReader<T> readBean(Class<T> bean) {
+    return readBean(bean, c -> c);
   }
 
-  <T> CsvReader<T> asBean(Class<T> bean, UnaryOperator<BeanConfig<T>> config);
+  <T> CsvReader<T> readBean(Class<T> bean, UnaryOperator<BeanReadConfig<T>> config);
 
-  interface BeanConfig<T> {
-    <E> BeanConfig<T> addHandler(CsvColumn<E> column, BiConsumer<T, E> setter);
+  interface BeanReadConfig<T> {
+    <E> BeanReadConfig<T> addHandler(CsvColumn<E> column, BiConsumer<T, E> setter);
 
-    <E> BeanConfig<T> addHandler(String column, BiConsumer<T, E> setter);
+    <E> BeanReadConfig<T> addHandler(String column, BiConsumer<T, E> setter);
+  }
+
+  /********************************** Write ************************************/
+  CsvWriter<List<Object>> writeList();
+
+  default CsvWriter<Map<CsvColumn<?>, Object>> writeMap() {
+    List<CsvColumn<?>> columns = columns();
+    return writeList().<Map<CsvColumn<?>, Object>> map(
+        m -> m.values().stream().sorted(Comparator.comparing(columns::indexOf)).collect(Collectors.toList()));
+  }
+
+  default <T> CsvWriter<T> writeBean(Class<T> bean) {
+    return writeBean(bean, c -> c);
+  }
+
+  <T> CsvWriter<T> writeBean(Class<T> bean, UnaryOperator<BeanWriteConfig<T>> config);
+
+  interface BeanWriteConfig<T> {
+    <E> BeanWriteConfig<T> addHandler(CsvColumn<E> column, Function<T, E> getter);
+
+    <E> BeanWriteConfig<T> addHandler(String column, Function<T, E> getter);
   }
 }
