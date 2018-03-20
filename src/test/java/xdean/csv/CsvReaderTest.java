@@ -41,8 +41,8 @@ public class CsvReaderTest {
   @Test
   public void test() throws Exception {
     reader
-        .asBean(Person.class)
-        .read(golden)
+        .readBean(Person.class)
+        .from(golden)
         .doOnError(e -> e.printStackTrace())
         .test()
         .assertNoErrors()
@@ -56,8 +56,8 @@ public class CsvReaderTest {
   @Test
   public void testSplitor() throws Exception {
     reader.splitor(":")
-        .asBean(A.class)
-        .read("a:b\n1:2\n:3\n4:")
+        .readBean(A.class)
+        .from("a:b\n1:2\n:3\n4:")
         .test()
         .assertNoErrors()
         .assertValueCount(3)
@@ -72,8 +72,8 @@ public class CsvReaderTest {
   public void testAddColumnAsMap() throws Exception {
     B.A.toString();
     reader.addColumns(B.A, B.B)
-        .asMap()
-        .read("a,b\n1,2\n3,4")
+        .readMap()
+        .from("a,b\n1,2\n3,4")
         .test()
         .assertNoErrors()
         .assertValueCount(2)
@@ -96,8 +96,8 @@ public class CsvReaderTest {
   public void testNoConstructor() throws Exception {
     class TNC {
     }
-    reader.asBean(TNC.class)
-        .read("")
+    reader.readBean(TNC.class)
+        .from("")
         .test()
         .assertError(CsvException.class)
         .assertErrorMessage("Bean must declare no-arg constructor.");
@@ -106,8 +106,8 @@ public class CsvReaderTest {
   @Test
   public void testMissColumn() throws Exception {
     reader
-        .asBean(A.class)
-        .read("a\n1\n3\n4")
+        .readBean(A.class)
+        .from("a\n1\n3\n4")
         .test()
         .assertError(CsvException.class)
         .assertErrorMessage("Column [b] not found.");
@@ -116,8 +116,8 @@ public class CsvReaderTest {
   @Test
   public void testOptional() throws Exception {
     reader
-        .asBean(C.class)
-        .read("a\n1\n3\n4")
+        .readBean(C.class)
+        .from("a\n1\n3\n4")
         .test()
         .assertNoErrors()
         .assertValueCount(3)
@@ -131,10 +131,10 @@ public class CsvReaderTest {
   public void testCustomHandler() throws Exception {
     reader
         .addColumn(A.C)
-        .asBean(A.class, b -> b
+        .readBean(A.class, b -> b
             .<Integer> addHandler("a", (o, v) -> o.setAPlus5(v))
             .addHandler(A.C, (o, v) -> o.c = v + 100))
-        .read("a,b,c\n1,2,-1\n3,4,-2")
+        .from("a,b,c\n1,2,-1\n3,4,-2")
         .test()
         .assertNoErrors()
         .assertValueCount(2)
@@ -145,8 +145,8 @@ public class CsvReaderTest {
 
   @Test
   public void testWrongParser() throws Exception {
-    reader.asBean(TWP.class)
-        .read("")
+    reader.readBean(TWP.class)
+        .from("")
         .test()
         .assertError(CsvException.class)
         .assertError(t -> t.getMessage().startsWith("Can't construct CsvValueParser from"));
@@ -156,8 +156,8 @@ public class CsvReaderTest {
   public void testSetter() throws Exception {
     reader
         .addColumns(B.A, B.B)
-        .asBean(B.class)
-        .read("a,b\n1,2\n3,4")
+        .readBean(B.class)
+        .from("a,b\n1,2\n3,4")
         .test()
         .assertValueCount(2)
         .assertValues(
@@ -167,8 +167,8 @@ public class CsvReaderTest {
 
   @Test
   public void testCsvName() throws Exception {
-    reader.asBean(D.class)
-        .read("a,b\n1\n2,3")
+    reader.readBean(D.class)
+        .from("a,b\n1\n2,3")
         .test()
         .assertValueCount(2)
         .assertValues(

@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
@@ -31,7 +32,9 @@ import xdean.csv.CsvConfig;
 import xdean.csv.CsvException;
 import xdean.csv.CsvReader;
 import xdean.csv.CsvValueParser;
+import xdean.csv.CsvWriter;
 import xdean.jex.extra.function.ActionE2;
+import xdean.jex.extra.function.FuncE1;
 import xdean.jex.log.Logable;
 import xdean.jex.util.OptionalUtil;
 import xdean.jex.util.lang.PrimitiveTypeUtil;
@@ -63,15 +66,32 @@ public class FluentCsv implements CsvConfig, Logable {
   }
 
   @Override
-  public CsvReader<List<Object>> asList() {
+  public CsvReader<List<Object>> readList() {
     return new FluentReader();
   }
 
   @Override
-  public <T> CsvReader<T> asBean(Class<T> bean, UnaryOperator<BeanConfig<T>> config) {
+  public <T> CsvReader<T> readBean(Class<T> bean, UnaryOperator<BeanReadConfig<T>> config) {
     try {
-      BeanConstructor<T> con = new BeanConstructor<>(bean, config);
-      return asList().map(s -> con.construct(s));
+      BeanConstructor<T> con = new BeanConstructor<>(bean);
+      config.apply(con);
+      return readList().map(s -> con.construct(s));
+    } catch (CsvException e) {
+      return f -> Flowable.error(e);
+    }
+  }
+
+  @Override
+  public CsvWriter<List<Object>> writeList() {
+    return new FluentWriter();
+  }
+
+  @Override
+  public <T> CsvWriter<T> writeBean(Class<T> bean, UnaryOperator<BeanWriteConfig<T>> config) {
+    try {
+      BeanDeconstructor<T> con = new BeanDeconstructor<>(bean);
+      config.apply(con);
+      return writeList().<T> map(s -> con.deconstruct(s));
     } catch (CsvException e) {
       return f -> Flowable.error(e);
     }
@@ -100,7 +120,7 @@ public class FluentCsv implements CsvConfig, Logable {
     }
 
     @Override
-    public Flowable<List<Object>> read(Flowable<String> lines) {
+    public Flowable<List<Object>> from(Flowable<String> lines) {
       return lines.map(String::trim)
           .filter(this::filterComment)
           .doOnNext(this::readHeader)
@@ -116,27 +136,32 @@ public class FluentCsv implements CsvConfig, Logable {
       if (header != null) {
         return;
       }
-      header = Arrays.asList(line.split(regexSplitor)).stream().map(String::trim).collect(Collectors.toList());
-      columnPos = new LinkedHashMap<>();
-      for (int i = 0; i < header.size(); i++) {
-        String name = header.get(i);
-        CsvColumn<?> column = columns.stream().filter(c -> Objects.equals(c.name(), name)).findFirst().orElse(null);
-        if (column != null) {
-          columnPos.put(i, column);
+      synchronized (this) {
+        if (header != null) {
+          return;
         }
+        header = Arrays.asList(line.split(regexSplitor)).stream().map(String::trim).collect(Collectors.toList());
+        columnPos = new LinkedHashMap<>();
+        for (int i = 0; i < header.size(); i++) {
+          String name = header.get(i);
+          CsvColumn<?> column = columns.stream().filter(c -> Objects.equals(c.name(), name)).findFirst().orElse(null);
+          if (column != null) {
+            columnPos.put(i, column);
+          }
+        }
+        columnPos = Collections.unmodifiableMap(columnPos);
+        List<CsvColumn<?>> requireds = new ArrayList<>(columns);
+        requireds.removeIf(c -> c.optional());
+        if (!columnPos.values().containsAll(requireds)) {
+          requireds.removeAll(columnPos.values());
+          throw new CsvException(
+              "Column [" + requireds.stream().map(c -> c.name()).collect(Collectors.joining(", ")) + "] not found.");
+        }
+        missedColumns = columns.stream()
+            .filter(c -> !columnPos.containsValue(c))
+            .filter(c -> c.defaultValue() != null)
+            .collect(Collectors.toList());
       }
-      columnPos = Collections.unmodifiableMap(columnPos);
-      List<CsvColumn<?>> requireds = new ArrayList<>(columns);
-      requireds.removeIf(c -> c.optional());
-      if (!columnPos.values().containsAll(requireds)) {
-        requireds.removeAll(columnPos.values());
-        throw new CsvException(
-            "Column [" + requireds.stream().map(c -> c.name()).collect(Collectors.joining(", ")) + "] not found.");
-      }
-      missedColumns = columns.stream()
-          .filter(c -> !columnPos.containsValue(c))
-          .filter(c -> c.defaultValue() != null)
-          .collect(Collectors.toList());
     }
 
     private List<Object> parse(String line) {
@@ -164,14 +189,14 @@ public class FluentCsv implements CsvConfig, Logable {
   }
 
   @SuppressWarnings("unchecked")
-  private class BeanConstructor<T> implements BeanConfig<T> {
+  private class BeanConstructor<T> implements BeanReadConfig<T> {
     private final Class<T> clz;
     private final List<Method> methods;
     private final List<Field> fields;
-    private final Map<CsvColumn<?>, BiConsumer<T, Object>> customHandlers = new HashMap<>();
-    private final Map<CsvColumn<?>, ActionE2<T, Object, Exception>> annoHandlers = new HashMap<>();
+    private final Map<CsvColumn<?>, BiConsumer<T, Object>> customSetter = new HashMap<>();
+    private final Map<CsvColumn<?>, ActionE2<T, Object, Exception>> annoSetter = new HashMap<>();
 
-    public BeanConstructor(Class<T> clz, UnaryOperator<BeanConfig<T>> config) throws CsvException {
+    public BeanConstructor(Class<T> clz) throws CsvException {
       if (uncatch(() -> clz.getDeclaredConstructor()) == null) {
         throw new CsvException("Bean must declare no-arg constructor.");
       }
@@ -179,21 +204,6 @@ public class FluentCsv implements CsvConfig, Logable {
       this.methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
       this.fields = Arrays.asList(ReflectUtil.getAllFields(clz, false));
       prepare();
-      config.apply(this);
-    }
-
-    @Override
-    public <E> BeanConfig<T> addHandler(CsvColumn<E> column, BiConsumer<T, E> setter) {
-      if (columns.contains(column)) {
-        customHandlers.put(column, (BiConsumer<T, Object>) setter);
-      }
-      return this;
-    }
-
-    @Override
-    public <E> BeanConfig<T> addHandler(String column, BiConsumer<T, E> setter) {
-      findColumn(column).ifPresent(c -> customHandlers.put(c, (BiConsumer<T, Object>) setter));
-      return this;
     }
 
     private <K> void prepare() throws CsvException {
@@ -222,7 +232,7 @@ public class FluentCsv implements CsvConfig, Logable {
           CsvColumn<?> column = CsvColumn.create(name, parser, defaultSupplier, optional);
           addColumn(column);
           f.setAccessible(true);
-          annoHandlers.put(column, (obj, v) -> f.set(obj, v));
+          annoSetter.put(column, (obj, v) -> f.set(obj, v));
         });
       }
       for (Method m : methods) {
@@ -257,9 +267,23 @@ public class FluentCsv implements CsvConfig, Logable {
         OptionalUtil.ifEmpty(findColumn(name), () -> {
           CsvColumn<?> column = CsvColumn.create(name, parser, defaultSupplier, optional);
           addColumn(column);
-          annoHandlers.put(column, (obj, v) -> m.invoke(obj, v));
+          annoSetter.put(column, (obj, v) -> m.invoke(obj, v));
         });
       }
+    }
+
+    @Override
+    public <E> BeanReadConfig<T> addHandler(CsvColumn<E> column, BiConsumer<T, E> setter) {
+      if (columns.contains(column)) {
+        customSetter.put(column, (BiConsumer<T, Object>) setter);
+      }
+      return this;
+    }
+
+    @Override
+    public <E> BeanReadConfig<T> addHandler(String column, BiConsumer<T, E> setter) {
+      findColumn(column).ifPresent(c -> customSetter.put(c, (BiConsumer<T, Object>) setter));
+      return this;
     }
 
     private <V> V getOrDefault(V value, V useDefault, Supplier<V> def) {
@@ -293,7 +317,7 @@ public class FluentCsv implements CsvConfig, Logable {
     }
 
     private boolean injectByCustom(T obj, CsvColumn<?> column, Object value) {
-      BiConsumer<T, Object> handler = customHandlers.get(column);
+      BiConsumer<T, Object> handler = customSetter.get(column);
       if (handler == null) {
         return false;
       }
@@ -307,7 +331,7 @@ public class FluentCsv implements CsvConfig, Logable {
     }
 
     private boolean injectByAnno(T obj, CsvColumn<?> column, Object value) {
-      ActionE2<T, Object, Exception> handler = annoHandlers.get(column);
+      ActionE2<T, Object, Exception> handler = annoSetter.get(column);
       if (handler == null) {
         return false;
       }
@@ -354,6 +378,52 @@ public class FluentCsv implements CsvConfig, Logable {
             }
           })
           .orElse(false);
+    }
+  }
+
+  public class FluentWriter implements CsvWriter<List<Object>> {
+    @Override
+    public Flowable<String> from(Flowable<List<Object>> data) {
+      return null;
+    }
+  }
+
+  private class BeanDeconstructor<T> implements BeanWriteConfig<T> {
+    private final Class<T> clz;
+    private final List<Method> methods;
+    private final List<Field> fields;
+    private final Map<CsvColumn<?>, Function<T, Object>> customGetter = new HashMap<>();
+    private final Map<CsvColumn<?>, FuncE1<T, Object, Exception>> annoGetter = new HashMap<>();
+
+    public BeanDeconstructor(Class<T> clz) throws CsvException {
+      if (uncatch(() -> clz.getDeclaredConstructor()) == null) {
+        throw new CsvException("Bean must declare no-arg constructor.");
+      }
+      this.clz = clz;
+      this.methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
+      this.fields = Arrays.asList(ReflectUtil.getAllFields(clz, false));
+      prepare();
+    }
+
+    private void prepare() {
+      // TODO Auto-generated method stub
+    }
+
+    @Override
+    public <E> BeanWriteConfig<T> addHandler(CsvColumn<E> column, Function<T, E> getter) {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    @Override
+    public <E> BeanWriteConfig<T> addHandler(String column, Function<T, E> getter) {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    public List<Object> deconstruct(T s) {
+      // TODO Auto-generated method stub
+      return null;
     }
   }
 }

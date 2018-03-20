@@ -19,6 +19,9 @@ public @interface CSV {
   @SuppressWarnings("rawtypes")
   Class<? extends CsvValueParser> parser() default CsvValueParser.class;
 
+  @SuppressWarnings("rawtypes")
+  Class<? extends CsvValueFormatter> formatter() default CsvValueFormatter.class;
+
   String defaultValue() default "defaultValue";
 
   boolean optional() default false;
