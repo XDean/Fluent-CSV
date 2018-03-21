@@ -35,7 +35,7 @@ import xdean.csv.CsvValueParser;
 import xdean.jex.extra.function.ActionE2;
 import xdean.jex.log.Logable;
 import xdean.jex.util.OptionalUtil;
-import xdean.jex.util.lang.PrimitiveTypeUtil;
+import static xdean.jex.util.lang.PrimitiveTypeUtil.*;
 import xdean.jex.util.reflect.ReflectUtil;
 import xdean.jex.util.string.StringUtil;
 
@@ -160,12 +160,12 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
           continue;
         }
         String name = getOrDefault(csv.name(), "", f::getName);
-        Class<?> type = PrimitiveTypeUtil.toWrapper(getOrDefault(csv.type(), void.class, f::getType));
+        Class<?> type = toWrapper(getOrDefault(csv.type(), void.class, f::getType));
         CsvValueParser<K> parser = firstNonNull(
             () -> getOrDefault(csv.parser(), CsvValueParser.class, null).newInstance(),
             () -> CsvValueParser.forType(type))
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-        assertTrue(f.getType().isAssignableFrom(type), "Type must extends the field's type: %s", csv);
+        assertTrue(toWrapper(f.getType()).isAssignableFrom(type), "Type must extends the field's type: %s", csv);
         assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", csv);
         String defaultStr = csv.defaultValue();
         Supplier<K> defaultSupplier;
@@ -196,12 +196,13 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
           }
           return n;
         });
-        Class<?> type = PrimitiveTypeUtil.toWrapper(getOrDefault(csv.type(), void.class, () -> m.getParameterTypes()[0]));
+        Class<?> type = toWrapper(getOrDefault(csv.type(), void.class, () -> m.getParameterTypes()[0]));
         CsvValueParser<K> parser = firstNonNull(
             () -> getOrDefault(csv.parser(), CsvValueParser.class, null).newInstance(),
             () -> CsvValueParser.forType(type))
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-        assertTrue(m.getParameterTypes()[0].isAssignableFrom(type), "Type must extends the method parameter type: %s", csv);
+        assertTrue(toWrapper(m.getParameterTypes()[0]).isAssignableFrom(type), "Type must extends the method parameter type: %s",
+            csv);
         assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", csv);
         String defaultStr = csv.defaultValue();
         Supplier<K> defaultSupplier;
@@ -221,7 +222,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     }
 
     @Override
-    public <E> BeanReadConfig<T> addHandler(CsvColumn<E> column, BiConsumer<T, E> setter) {
+    public <E> BeanReadConfig<T> addSetter(CsvColumn<E> column, BiConsumer<T, E> setter) {
       if (columns.contains(column)) {
         customSetter.put(column, (BiConsumer<T, Object>) setter);
       }
@@ -229,7 +230,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     }
 
     @Override
-    public <E> BeanReadConfig<T> addHandler(String column, BiConsumer<T, E> setter) {
+    public <E> BeanReadConfig<T> addSetter(String column, BiConsumer<T, E> setter) {
       findColumn(columns, column).ifPresent(c -> customSetter.put(c, (BiConsumer<T, Object>) setter));
       return this;
     }
@@ -250,7 +251,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
         if (value == null) {
           continue;
         } else if (injectByCustom(obj, column, value)) {
-          debug(format("Set property %s by custom handler.", column.name()));
+          debug(format("Set property %s by custom setter.", column.name()));
         } else if (injectByAnno(obj, column, value)) {
           debug(format("Set property %s by annotation.", column.name()));
         } else if (injectBySetter(obj, column, value)) {
@@ -258,19 +259,19 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
         } else if (injectByField(obj, column, value)) {
           debug(format("Set property %s by field.", column.name()));
         } else {
-          throw new CsvException("Can't find property for %s.", column.name());
+          throw new CsvException("Can't find property for %s.", column);
         }
       }
       return obj;
     }
 
     private boolean injectByCustom(T obj, CsvColumn<?> column, Object value) {
-      BiConsumer<T, Object> handler = customSetter.get(column);
-      if (handler == null) {
+      BiConsumer<T, Object> setter = customSetter.get(column);
+      if (setter == null) {
         return false;
       }
       try {
-        handler.accept(obj, value);
+        setter.accept(obj, value);
         return true;
       } catch (Exception e) {
         debug("Fail to inject by custom handler.", e);
@@ -279,12 +280,12 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     }
 
     private boolean injectByAnno(T obj, CsvColumn<?> column, Object value) {
-      ActionE2<T, Object, Exception> handler = annoSetter.get(column);
-      if (handler == null) {
+      ActionE2<T, Object, Exception> setter = annoSetter.get(column);
+      if (setter == null) {
         return false;
       }
       try {
-        handler.call(obj, value);
+        setter.call(obj, value);
         return true;
       } catch (Exception e) {
         debug("Fail to inject by anno.", e);

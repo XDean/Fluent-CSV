@@ -44,9 +44,9 @@ public interface CsvConfig {
   <T> CsvReader<T> readBean(Class<T> bean, UnaryOperator<BeanReadConfig<T>> config);
 
   interface BeanReadConfig<T> {
-    <E> BeanReadConfig<T> addHandler(CsvColumn<E> column, BiConsumer<T, E> setter);
+    <E> BeanReadConfig<T> addSetter(CsvColumn<E> column, BiConsumer<T, E> setter);
 
-    <E> BeanReadConfig<T> addHandler(String column, BiConsumer<T, E> setter);
+    <E> BeanReadConfig<T> addSetter(String column, BiConsumer<T, E> setter);
   }
 
   /********************************** Write ************************************/
@@ -65,8 +65,8 @@ public interface CsvConfig {
   <T> CsvWriter<T> writeBean(Class<T> bean, UnaryOperator<BeanWriteConfig<T>> config);
 
   interface BeanWriteConfig<T> {
-    <E> BeanWriteConfig<T> addHandler(CsvColumn<E> column, Function<T, E> getter);
+    <E> BeanWriteConfig<T> addGetter(CsvColumn<E> column, Function<T, E> getter);
 
-    <E> BeanWriteConfig<T> addHandler(String column, Function<T, E> getter);
+    <E> BeanWriteConfig<T> addGetter(String column, Function<T, E> getter);
   }
 }
