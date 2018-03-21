@@ -121,8 +121,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
         assertTrue(toWrapper(f.getType()).isAssignableFrom(type), "Type must extends the field's type: %s", csv);
         assertTrue(type.isAssignableFrom(formatter.type()), "CsvValueFormatter is not matched to the type: %s.", csv);
-        boolean optional = csv.optional();
-        CsvColumn<?> column = CsvColumn.create(name, formatter, null, optional);
+        CsvColumn<?> column = CsvColumn.create(name, formatter);
         if (addColumn(column)) {
           f.setAccessible(true);
           annoGetter.put(column, obj -> f.get(obj));
@@ -150,8 +149,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
         assertTrue(toWrapper(m.getReturnType()).isAssignableFrom(type), "Type must extends the method parameter type: %s", csv);
         assertTrue(type.isAssignableFrom(parser.type()), "CsvValueFormatter is not matched to the type: %s.", csv);
-        boolean optional = csv.optional();
-        CsvColumn<?> column = CsvColumn.create(name, parser, null, optional);
+        CsvColumn<?> column = CsvColumn.create(name, parser);
         if (addColumn(column)) {
           annoGetter.put(column, obj -> m.invoke(obj));
         }
