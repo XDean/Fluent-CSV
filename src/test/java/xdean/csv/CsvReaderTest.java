@@ -32,7 +32,7 @@ public class CsvReaderTest {
 
   @Before
   public void setup() throws Exception {
-    reader = new FluentCSV();
+    reader = FluentCSV.create();
     golden = getGolden("person.csv");
   }
 

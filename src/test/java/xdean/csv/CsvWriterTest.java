@@ -23,7 +23,7 @@ public class CsvWriterTest {
 
   @Before
   public void setup() throws Exception {
-    writer = new FluentCSV();
+    writer = FluentCSV.create();
   }
 
   @Test
