@@ -44,7 +44,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
   private Map<Integer, CsvColumn<?>> columnPos;
   private List<CsvColumn<?>> missedColumns;
 
-  public FluentReader(FluentCsv fluentCsv) {
+  public FluentReader(FluentCSV fluentCsv) {
     this.columns = new ArrayList<>(fluentCsv.columns);
     this.splitor = fluentCsv.splitor;
     this.regexSplitor = Pattern.quote(splitor);

@@ -15,7 +15,7 @@ import xdean.csv.CsvWriter;
 import xdean.csv.CsvWriter.CsvBeanWriter;
 import xdean.jex.log.Logable;
 
-public class FluentCsv implements CsvConfig, Logable {
+public class FluentCSV implements CsvConfig, Logable {
   final List<CsvColumn<?>> columns = new ArrayList<>();
   String splitor = ",";
 

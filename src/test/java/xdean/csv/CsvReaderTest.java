@@ -19,7 +19,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import xdean.csv.CsvReaderTest.Person.House;
-import xdean.csv.fluent.FluentCsv;
+import xdean.csv.fluent.FluentCSV;
 
 public class CsvReaderTest {
   private static final Person dean = new Person(1, "DEAN", 100, House.NO, "");
@@ -31,7 +31,7 @@ public class CsvReaderTest {
 
   @Before
   public void setup() throws Exception {
-    reader = new FluentCsv();
+    reader = new FluentCSV();
     golden = getGolden("person.csv");
   }
 

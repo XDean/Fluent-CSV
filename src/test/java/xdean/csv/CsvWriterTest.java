@@ -3,6 +3,7 @@ package xdean.csv;
 import static xdean.jex.util.lang.ExceptionUtil.throwIt;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -12,7 +13,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import xdean.csv.fluent.FluentCsv;
+import xdean.csv.fluent.FluentCSV;
 
 @SuppressWarnings("unchecked")
 public class CsvWriterTest {
@@ -21,7 +22,7 @@ public class CsvWriterTest {
 
   @Before
   public void setup() throws Exception {
-    writer = new FluentCsv();
+    writer = new FluentCSV();
   }
 
   @Test
@@ -138,6 +139,20 @@ public class CsvWriterTest {
         .test()
         .assertError(CsvException.class)
         .assertError(t -> t.getMessage().contains("Can't find property"));
+  }
+
+  @Test
+  public void testSort() throws Exception {
+    writer.addColumns(A.A, A.B, C.D)
+        .writeBean(C.class)
+        .sort(Comparator.comparing(CsvColumn::name))
+        .from(new C(1, 2, true, 3), new C(4, 5, false, 6))
+        .test()
+        .assertNoErrors()
+        .assertValueCount(3)
+        .assertValues("a, b, c, d",
+            "1, 2, true, 3",
+            "4, 5, false, 6");
   }
 
   @EqualsAndHashCode

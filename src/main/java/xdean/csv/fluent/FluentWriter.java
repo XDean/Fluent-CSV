@@ -11,6 +11,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +31,13 @@ import xdean.jex.util.reflect.ReflectUtil;
 import xdean.jex.util.string.StringUtil;
 
 public class FluentWriter implements CsvWriter<List<Object>>, Logable {
-  private final List<CsvColumn<?>> columns;
   private final String splitor;
+  private final List<CsvColumn<?>> columns;
+  private List<CsvColumn<?>> sortedColumns;
 
-  public FluentWriter(FluentCsv fluentCsv) {
+  public FluentWriter(FluentCSV fluentCsv) {
     this.columns = new ArrayList<>(fluentCsv.columns);
+    this.sortedColumns = columns;
     this.splitor = fluentCsv.splitor;
   }
 
@@ -43,34 +46,42 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
     return data.map(this::format).startWith(getHeader());
   }
 
+  @Override
+  public CsvWriter<List<Object>> sort(Comparator<CsvColumn<?>> comparator) {
+    sortedColumns = new ArrayList<>(columns);
+    sortedColumns.sort(comparator);
+    return this;
+  }
+
   public <T> CsvBeanWriter<T> asBean(Class<T> bean) throws CsvException {
     return new BeanDeconstructor<>(bean);
   }
 
   private String getHeader() {
-    return columns.stream()
+    return sortedColumns.stream()
         .map(c -> c.name())
         .collect(Collectors.joining(splitor + " "));
   }
 
   @SuppressWarnings("unchecked")
   private String format(List<Object> line) throws CsvException {
-    List<String> strs = new ArrayList<>(columns.size());
+    String[] strs = new String[columns.size()];
+    Arrays.fill(strs, "");
     for (int i = 0; i < columns.size(); i++) {
       if (line.size() > i) {
         Object value = line.get(i);
-        CsvValueFormatter<Object> formatter = (CsvValueFormatter<Object>) columns.get(i).formatter();
+        CsvColumn<?> column = columns.get(i);
+        CsvValueFormatter<Object> formatter = (CsvValueFormatter<Object>) column.formatter();
+        int index = sortedColumns.indexOf(column);
         if (formatter == null) {
-          strs.add(value.toString());
+          strs[index] = value.toString();
         } else {
           assertTrue(formatter.type().isInstance(value), "%s is not instance of %s", value, formatter.type());
-          strs.add(formatter.format(value));
+          strs[index] = formatter.format(value);
         }
-      } else {
-        strs.add("");
       }
     }
-    return strs.stream().collect(Collectors.joining(splitor + " "));
+    return Arrays.stream(strs).collect(Collectors.joining(splitor + " "));
   }
 
   private boolean addColumn(CsvColumn<?> column) {
@@ -150,6 +161,12 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
     @Override
     public Flowable<String> from(Flowable<T> data) {
       return FluentWriter.this.map(this::deconstruct).from(data);
+    }
+
+    @Override
+    public CsvBeanWriter<T> sort(Comparator<CsvColumn<?>> comparator) {
+      FluentWriter.this.sort(comparator);
+      return this;
     }
 
     @Override
