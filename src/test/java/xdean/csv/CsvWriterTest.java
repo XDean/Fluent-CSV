@@ -160,7 +160,7 @@ public class CsvWriterTest {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class A {
-    static final CsvColumn<Integer> A = CsvColumn.create("a", (CsvValueFormatter<Integer>) null);
+    static final CsvColumn<Integer> A = CsvColumn.create("a", CsvValueFormatter.toString(Integer.class));
     static final CsvColumn<Integer> B = CsvColumn.create("b", CsvValueFormatter.toString(Integer.class));
     @CSV
     int a;

@@ -8,13 +8,17 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Indicate the element takes effect only when read CSV.
+ * Indicate the element takes effect only in write context. It can be null in read context.
  *
- * @author Dean Xuxx (XDean@github.com)
+ * @author Dean Xu (XDean@github.com)
+ *
  */
 @Documented
 @Retention(SOURCE)
 @Target(METHOD)
 public @interface OnlyForWrite {
-
+  /**
+   * If true, this value can be null even in write context.
+   */
+  boolean canBeNull() default false;
 }
