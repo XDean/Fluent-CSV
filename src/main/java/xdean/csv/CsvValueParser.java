@@ -11,7 +11,9 @@ public interface CsvValueParser<T> {
 
   Class<T> type();
 
+  @SuppressWarnings("unchecked")
   static <T> CsvValueParser<T> create(Class<T> clz, Function<String, T> function) {
+    Class<T> c = (Class<T>) PrimitiveTypeUtil.toWrapper(clz);
     return new CsvValueParser<T>() {
       @Override
       public T parse(String value) throws RuntimeException {
@@ -20,7 +22,7 @@ public interface CsvValueParser<T> {
 
       @Override
       public Class<T> type() {
-        return clz;
+        return c;
       }
     };
   }
