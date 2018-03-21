@@ -19,6 +19,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import xdean.csv.CsvReaderTest.Person.House;
+import xdean.csv.annotation.CSV;
 import xdean.csv.fluent.FluentCSV;
 
 public class CsvReaderTest {

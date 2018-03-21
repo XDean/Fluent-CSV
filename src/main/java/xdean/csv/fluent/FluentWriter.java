@@ -20,11 +20,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.reactivex.Flowable;
-import xdean.csv.CSV;
 import xdean.csv.CsvColumn;
 import xdean.csv.CsvException;
 import xdean.csv.CsvValueFormatter;
 import xdean.csv.CsvWriter;
+import xdean.csv.annotation.CSV;
 import xdean.jex.extra.function.FuncE1;
 import xdean.jex.log.Logable;
 import xdean.jex.util.reflect.ReflectUtil;

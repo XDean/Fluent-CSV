@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import xdean.csv.annotation.CSV;
 import xdean.csv.fluent.FluentCSV;
 
 @SuppressWarnings("unchecked")

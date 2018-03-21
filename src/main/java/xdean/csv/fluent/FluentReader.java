@@ -26,11 +26,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.reactivex.Flowable;
-import xdean.csv.CSV;
 import xdean.csv.CsvColumn;
 import xdean.csv.CsvException;
 import xdean.csv.CsvReader;
 import xdean.csv.CsvValueParser;
+import xdean.csv.annotation.CSV;
 import xdean.jex.extra.function.ActionE2;
 import xdean.jex.log.Logable;
 import xdean.jex.util.reflect.ReflectUtil;

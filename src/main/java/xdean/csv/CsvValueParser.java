@@ -6,6 +6,15 @@ import java.util.function.Function;
 
 import xdean.jex.util.lang.PrimitiveTypeUtil;
 
+/**
+ *
+ *
+ * @apiNote must be stateless
+ *
+ * @author Dean Xu (XDean@github.com)
+ *
+ * @param <T>
+ */
 public interface CsvValueParser<T> {
   T parse(String value) throws RuntimeException;
 
