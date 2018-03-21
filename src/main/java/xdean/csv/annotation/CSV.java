@@ -56,7 +56,7 @@ public @interface CSV {
   Class<? extends CsvValueParser> parser() default CsvValueParser.class;
 
   /**
-   * The parser to write value. The default value is from {@link CsvValueParser#toString(Class)} by
+   * The parser to write value. The default value is from {@link CsvValueFormatter#toString(Class)} by
    * {@link #type()}.
    */
   @OnlyForWrite

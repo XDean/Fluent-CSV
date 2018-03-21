@@ -56,7 +56,7 @@ public interface CsvConfig {
   CsvReader<List<Object>> readList();
 
   /**
-   * Create {@link CsvReader} who reads content as {code Map<CsvColumn, Object>}.
+   * Create {@link CsvReader} who reads content as {@code Map<CsvColumn, Object>}.
    */
   default CsvReader<Map<CsvColumn<?>, Object>> readMap() {
     List<CsvColumn<?>> columns = columns();
@@ -84,7 +84,7 @@ public interface CsvConfig {
   CsvWriter<List<Object>> writeList();
 
   /**
-   * Create {@link CsvWriter} who writes content as {code Map<CsvColumn, Object>}.
+   * Create {@link CsvWriter} who writes content as {@code Map<CsvColumn, Object>}.
    */
   default CsvWriter<Map<CsvColumn<?>, Object>> writeMap() {
     List<CsvColumn<?>> columns = columns();
