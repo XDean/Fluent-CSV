@@ -57,9 +57,9 @@ public class CsvWriterTest {
   public void testCustom() throws Exception {
     writer
         .addColumn(A.A)
-        .writeBean(A.class, c -> c
-            .addGetter(A.B, a -> a.b + 100)
-            .addGetter("a", a -> a.a - 100))
+        .writeBean(A.class)
+        .addGetter(A.B, a -> a.b + 100)
+        .addGetter("a", a -> a.a - 100)
         .from(new A(1, 2), new A(3, 4))
         .test()
         .assertNoErrors()
@@ -132,7 +132,8 @@ public class CsvWriterTest {
   @Test
   public void testGetError() throws Exception {
     writer
-        .writeBean(D.class, d -> d.addGetter(A.A, o -> throwIt(new RuntimeException())))
+        .writeBean(D.class)
+        .addGetter(A.A, o -> throwIt(new RuntimeException()))
         .from(new D())
         .test()
         .assertError(CsvException.class)

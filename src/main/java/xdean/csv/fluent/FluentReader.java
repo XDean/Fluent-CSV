@@ -22,14 +22,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.reactivex.Flowable;
 import xdean.csv.CSV;
 import xdean.csv.CsvColumn;
-import xdean.csv.CsvConfig.BeanReadConfig;
 import xdean.csv.CsvException;
 import xdean.csv.CsvReader;
 import xdean.csv.CsvValueParser;
@@ -61,10 +59,8 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
         .map(this::parse);
   }
 
-  public <T> CsvReader<T> asBean(Class<T> bean, UnaryOperator<BeanReadConfig<T>> config) throws CsvException {
-    BeanConstructor<T> con = new BeanConstructor<>(bean);
-    config.apply(con);
-    return map(s -> con.construct(s));
+  public <T> CsvBeanReader<T> asBean(Class<T> bean) throws CsvException {
+    return new BeanConstructor<>(bean);
   }
 
   private boolean addColumn(CsvColumn<?> column) {
@@ -136,7 +132,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
   }
 
   @SuppressWarnings("unchecked")
-  private class BeanConstructor<T> implements BeanReadConfig<T> {
+  private class BeanConstructor<T> implements CsvBeanReader<T> {
     private final Class<T> clz;
     private final List<Method> methods;
     private final List<Field> fields;
@@ -218,7 +214,12 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     }
 
     @Override
-    public <E> BeanReadConfig<T> addSetter(CsvColumn<E> column, BiConsumer<T, E> setter) {
+    public Flowable<T> from(Flowable<String> lines) {
+      return FluentReader.this.from(lines).map(this::construct);
+    }
+
+    @Override
+    public <E> CsvBeanReader<T> addSetter(CsvColumn<E> column, BiConsumer<T, E> setter) {
       if (columns.contains(column)) {
         customSetter.put(column, (BiConsumer<T, Object>) setter);
       }
@@ -226,7 +227,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     }
 
     @Override
-    public <E> BeanReadConfig<T> addSetter(String column, BiConsumer<T, E> setter) {
+    public <E> CsvBeanReader<T> addSetter(String column, BiConsumer<T, E> setter) {
       findColumn(columns, column).ifPresent(c -> customSetter.put(c, (BiConsumer<T, Object>) setter));
       return this;
     }

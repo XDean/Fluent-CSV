@@ -4,14 +4,15 @@ import static xdean.csv.fluent.Util.findColumn;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 import io.reactivex.Flowable;
 import xdean.csv.CsvColumn;
 import xdean.csv.CsvConfig;
 import xdean.csv.CsvException;
 import xdean.csv.CsvReader;
+import xdean.csv.CsvReader.CsvBeanReader;
 import xdean.csv.CsvWriter;
+import xdean.csv.CsvWriter.CsvBeanWriter;
 import xdean.jex.log.Logable;
 
 public class FluentCsv implements CsvConfig, Logable {
@@ -47,9 +48,9 @@ public class FluentCsv implements CsvConfig, Logable {
   }
 
   @Override
-  public <T> CsvReader<T> readBean(Class<T> bean, UnaryOperator<BeanReadConfig<T>> config) {
+  public <T> CsvBeanReader<T> readBean(Class<T> bean) {
     try {
-      return new FluentReader(this).asBean(bean, config);
+      return new FluentReader(this).asBean(bean);
     } catch (CsvException e) {
       return f -> Flowable.error(e);
     }
@@ -61,9 +62,9 @@ public class FluentCsv implements CsvConfig, Logable {
   }
 
   @Override
-  public <T> CsvWriter<T> writeBean(Class<T> bean, UnaryOperator<BeanWriteConfig<T>> config) {
+  public <T> CsvBeanWriter<T> writeBean(Class<T> bean) {
     try {
-      return new FluentWriter(this).asBean(bean, config);
+      return new FluentWriter(this).asBean(bean);
     } catch (CsvException e) {
       return f -> Flowable.error(e);
     }

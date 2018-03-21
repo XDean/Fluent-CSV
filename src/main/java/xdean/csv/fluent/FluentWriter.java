@@ -16,13 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import io.reactivex.Flowable;
 import xdean.csv.CSV;
 import xdean.csv.CsvColumn;
-import xdean.csv.CsvConfig.BeanWriteConfig;
 import xdean.csv.CsvException;
 import xdean.csv.CsvValueFormatter;
 import xdean.csv.CsvWriter;
@@ -45,10 +43,8 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
     return data.map(this::format).startWith(getHeader());
   }
 
-  public <T> CsvWriter<T> asBean(Class<T> bean, UnaryOperator<BeanWriteConfig<T>> config) throws CsvException {
-    BeanDeconstructor<T> con = new BeanDeconstructor<>(bean);
-    config.apply(con);
-    return map(s -> con.deconstruct(s));
+  public <T> CsvBeanWriter<T> asBean(Class<T> bean) throws CsvException {
+    return new BeanDeconstructor<>(bean);
   }
 
   private String getHeader() {
@@ -87,7 +83,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
   }
 
   @SuppressWarnings("unchecked")
-  private class BeanDeconstructor<T> implements BeanWriteConfig<T> {
+  private class BeanDeconstructor<T> implements CsvBeanWriter<T> {
     private final List<Method> methods;
     private final List<Field> fields;
     private final Map<CsvColumn<?>, Function<T, Object>> customGetter = new HashMap<>();
@@ -152,7 +148,12 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
     }
 
     @Override
-    public <E> BeanWriteConfig<T> addGetter(CsvColumn<E> column, Function<T, E> getter) {
+    public Flowable<String> from(Flowable<T> data) {
+      return FluentWriter.this.map(this::deconstruct).from(data);
+    }
+
+    @Override
+    public <E> CsvBeanWriter<T> addGetter(CsvColumn<E> column, Function<T, E> getter) {
       if (columns.contains(column)) {
         customGetter.put(column, (Function<T, Object>) getter);
       }
@@ -160,7 +161,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
     }
 
     @Override
-    public <E> BeanWriteConfig<T> addGetter(String column, Function<T, E> getter) {
+    public <E> CsvBeanWriter<T> addGetter(String column, Function<T, E> getter) {
       findColumn(columns, column).ifPresent(c -> customGetter.put(c, (Function<T, Object>) getter));
       return this;
     }

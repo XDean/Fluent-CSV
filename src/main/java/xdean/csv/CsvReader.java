@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.BiConsumer;
 
 import io.reactivex.Flowable;
 import io.reactivex.functions.Function;
@@ -42,5 +43,16 @@ public interface CsvReader<T> {
         e.onNext(line);
       }
     }));
+  }
+
+  @FunctionalInterface
+  interface CsvBeanReader<T> extends CsvReader<T> {
+    default <E> CsvBeanReader<T> addSetter(CsvColumn<E> column, BiConsumer<T, E> setter) {
+      return this;
+    }
+
+    default <E> CsvBeanReader<T> addSetter(String column, BiConsumer<T, E> setter) {
+      return this;
+    }
   }
 }

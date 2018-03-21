@@ -1,6 +1,6 @@
 package xdean.csv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 import static xdean.csv.CsvColumn.create;
 import static xdean.jex.util.lang.ExceptionUtil.throwIt;
 
@@ -132,9 +132,9 @@ public class CsvReaderTest {
   public void testCustomHandler() throws Exception {
     reader
         .addColumn(A.C)
-        .readBean(A.class, b -> b
-            .<Integer> addSetter("a", (o, v) -> o.setAPlus5(v))
-            .addSetter(A.C, (o, v) -> o.c = v + 100))
+        .readBean(A.class)
+        .<Integer> addSetter("a", (o, v) -> o.setAPlus5(v))
+        .addSetter(A.C, (o, v) -> o.c = v + 100)
         .from("a,b,c\n1,2,-1\n3,4,-2")
         .test()
         .assertNoErrors()
@@ -181,7 +181,8 @@ public class CsvReaderTest {
   public void testGetError() throws Exception {
     reader
         .addColumn(B.A)
-        .readBean(E.class, c -> c.addSetter(B.A, (e, v) -> throwIt(new RuntimeException())))
+        .readBean(E.class)
+        .addSetter(B.A, (e, v) -> throwIt(new RuntimeException()))
         .from("a\n1")
         .test()
         .assertError(CsvException.class)

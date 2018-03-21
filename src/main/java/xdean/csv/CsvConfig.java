@@ -5,10 +5,10 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+
+import xdean.csv.CsvReader.CsvBeanReader;
+import xdean.csv.CsvWriter.CsvBeanWriter;
 
 public interface CsvConfig {
 
@@ -37,17 +37,7 @@ public interface CsvConfig {
     });
   }
 
-  default <T> CsvReader<T> readBean(Class<T> bean) {
-    return readBean(bean, c -> c);
-  }
-
-  <T> CsvReader<T> readBean(Class<T> bean, UnaryOperator<BeanReadConfig<T>> config);
-
-  interface BeanReadConfig<T> {
-    <E> BeanReadConfig<T> addSetter(CsvColumn<E> column, BiConsumer<T, E> setter);
-
-    <E> BeanReadConfig<T> addSetter(String column, BiConsumer<T, E> setter);
-  }
+  <T> CsvBeanReader<T> readBean(Class<T> bean);
 
   /********************************** Write ************************************/
   CsvWriter<List<Object>> writeList();
@@ -58,15 +48,5 @@ public interface CsvConfig {
         m -> m.values().stream().sorted(Comparator.comparing(columns::indexOf)).collect(Collectors.toList()));
   }
 
-  default <T> CsvWriter<T> writeBean(Class<T> bean) {
-    return writeBean(bean, c -> c);
-  }
-
-  <T> CsvWriter<T> writeBean(Class<T> bean, UnaryOperator<BeanWriteConfig<T>> config);
-
-  interface BeanWriteConfig<T> {
-    <E> BeanWriteConfig<T> addGetter(CsvColumn<E> column, Function<T, E> getter);
-
-    <E> BeanWriteConfig<T> addGetter(String column, Function<T, E> getter);
-  }
+  <T> CsvBeanWriter<T> writeBean(Class<T> bean);
 }
