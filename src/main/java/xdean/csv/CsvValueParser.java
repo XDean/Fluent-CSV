@@ -7,25 +7,32 @@ import java.util.function.Function;
 import xdean.jex.util.lang.PrimitiveTypeUtil;
 
 /**
+ * CSV value parser.
  *
- *
- * @apiNote must be stateless
- *
+ * @apiNote The parser must be stateless.
  * @author Dean Xu (XDean@github.com)
- *
- * @param <T>
+ * @param <T> the value type.
  */
 public interface CsvValueParser<T> {
-  T parse(String value) throws RuntimeException;
+  /**
+   * Parse the text to value.
+   */
+  T parse(String text);
 
+  /**
+   * The value type.
+   */
   Class<T> type();
 
+  /**
+   * Create {@code CsvValueParser<T>} from the {@code Function<String, T>}.
+   */
   @SuppressWarnings("unchecked")
   static <T> CsvValueParser<T> create(Class<T> clz, Function<String, T> function) {
     Class<T> c = (Class<T>) PrimitiveTypeUtil.toWrapper(clz);
     return new CsvValueParser<T>() {
       @Override
-      public T parse(String value) throws RuntimeException {
+      public T parse(String value) {
         return function.apply(value);
       }
 
@@ -36,6 +43,9 @@ public interface CsvValueParser<T> {
     };
   }
 
+  /**
+   * Default parsers.
+   */
   CsvValueParser<String> STRING = Helper.create(String.class, v -> v);
   CsvValueParser<Integer> INT = Helper.create(Integer.class, Integer::valueOf);
   CsvValueParser<Long> LONG = Helper.create(Long.class, Long::valueOf);
@@ -43,6 +53,9 @@ public interface CsvValueParser<T> {
   CsvValueParser<Double> DOUBLE = Helper.create(Double.class, Double::valueOf);
   CsvValueParser<Boolean> BOOLEAN = Helper.create(Boolean.class, Boolean::valueOf);
 
+  /**
+   * Inner helper class.
+   */
   static class Helper {
     private static final Map<Class<?>, CsvValueParser<?>> DEFAULTS = new HashMap<>();
 
@@ -56,10 +69,18 @@ public interface CsvValueParser<T> {
     }
   }
 
+  /**
+   * Get {@link CsvValueParser} for enum type.
+   */
   static <T extends Enum<T>> CsvValueParser<T> forEnum(Class<T> clz) {
     return CsvValueParser.create(clz, v -> Enum.valueOf(clz, v));
   }
 
+  /**
+   * Get default parser from the value's type.
+   *
+   * @throws CsvException when the type has no default parser.
+   */
   @SuppressWarnings("unchecked")
   static <T, K extends Enum<K>> CsvValueParser<? extends T> forType(Class<T> clz) throws CsvException {
     CsvValueParser<?> parser = Helper.DEFAULTS.get(clz);
