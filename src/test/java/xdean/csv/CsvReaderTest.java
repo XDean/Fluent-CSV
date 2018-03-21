@@ -1,7 +1,8 @@
 package xdean.csv;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static xdean.csv.CsvColumn.create;
+import static xdean.jex.util.lang.ExceptionUtil.throwIt;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -176,6 +177,17 @@ public class CsvReaderTest {
             new D(2, 3));
   }
 
+  @Test
+  public void testGetError() throws Exception {
+    reader
+        .addColumn(B.A)
+        .readBean(E.class, c -> c.addSetter(B.A, (e, v) -> throwIt(new RuntimeException())))
+        .from("a\n1")
+        .test()
+        .assertError(CsvException.class)
+        .assertError(e -> e.getMessage().contains("Can't find property"));
+  }
+
   public static class UpperParser implements CsvValueParser<String> {
     @Override
     public String parse(String value) throws RuntimeException {
@@ -253,6 +265,14 @@ public class CsvReaderTest {
     @CSV(defaultValue = "100")
     public void b(int b) {
       this.b = b;
+    }
+  }
+
+  @EqualsAndHashCode
+  static class E {
+    @CSV
+    public void setA(int i) {
+      throw new RuntimeException();
     }
   }
 

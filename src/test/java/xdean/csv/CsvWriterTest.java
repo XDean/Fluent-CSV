@@ -1,5 +1,7 @@
 package xdean.csv;
 
+import static xdean.jex.util.lang.ExceptionUtil.throwIt;
+
 import java.util.Arrays;
 
 import org.junit.Before;
@@ -127,6 +129,16 @@ public class CsvWriterTest {
             "4, 5, 6, false");
   }
 
+  @Test
+  public void testGetError() throws Exception {
+    writer
+        .writeBean(D.class, d -> d.addGetter(A.A, o -> throwIt(new RuntimeException())))
+        .from(new D())
+        .test()
+        .assertError(CsvException.class)
+        .assertError(t -> t.getMessage().contains("Can't find property"));
+  }
+
   @EqualsAndHashCode
   @NoArgsConstructor
   @AllArgsConstructor
@@ -196,6 +208,14 @@ public class CsvWriterTest {
     @CSV
     public boolean isC() {
       return c;
+    }
+  }
+
+  @EqualsAndHashCode
+  public static class D {
+    @CSV
+    public int getA() {
+      throw new RuntimeException();
     }
   }
 }
