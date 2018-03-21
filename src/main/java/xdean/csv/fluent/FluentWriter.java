@@ -28,7 +28,6 @@ import xdean.csv.CsvValueFormatter;
 import xdean.csv.CsvWriter;
 import xdean.jex.extra.function.FuncE1;
 import xdean.jex.log.Logable;
-import xdean.jex.util.OptionalUtil;
 import xdean.jex.util.reflect.ReflectUtil;
 import xdean.jex.util.string.StringUtil;
 
@@ -67,9 +66,8 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
         CsvValueFormatter<Object> formatter = (CsvValueFormatter<Object>) columns.get(i).formatter();
         if (formatter == null) {
           strs.add(value.toString());
-        } else if (!formatter.type().isInstance(value)) {
-          throw new CsvException("%s is not instance of %s", value, formatter.type());
         } else {
+          assertTrue(formatter.type().isInstance(value), "%s is not instance of %s", value, formatter.type());
           strs.add(formatter.format(value));
         }
       } else {
@@ -79,11 +77,12 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
     return strs.stream().collect(Collectors.joining(splitor + " "));
   }
 
-  private void addColumn(CsvColumn<?> column) {
+  private boolean addColumn(CsvColumn<?> column) {
     if (findColumn(columns, column.name()).isPresent()) {
       debug("Column " + column.name() + " already exists.");
+      return false;
     } else {
-      columns.add(column);
+      return columns.add(column);
     }
   }
 
@@ -95,9 +94,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
     private final Map<CsvColumn<?>, FuncE1<T, Object, Exception>> annoGetter = new HashMap<>();
 
     public BeanDeconstructor(Class<T> clz) throws CsvException {
-      if (uncatch(() -> clz.getDeclaredConstructor()) == null) {
-        throw new CsvException("Bean must declare no-arg constructor.");
-      }
+      assertTrue(uncatch(() -> clz.getDeclaredConstructor()) != null, "Bean must declare no-arg constructor.");
       this.methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
       this.fields = Arrays.asList(ReflectUtil.getAllFields(clz, false));
       prepare();
@@ -118,12 +115,11 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
         assertTrue(toWrapper(f.getType()).isAssignableFrom(type), "Type must extends the field's type: %s", csv);
         assertTrue(type.isAssignableFrom(formatter.type()), "CsvValueFormatter is not matched to the type: %s.", csv);
         boolean optional = csv.optional();
-        OptionalUtil.ifEmpty(findColumn(columns, name), () -> {
-          CsvColumn<?> column = CsvColumn.create(name, formatter, null, optional);
-          addColumn(column);
+        CsvColumn<?> column = CsvColumn.create(name, formatter, null, optional);
+        if (addColumn(column)) {
           f.setAccessible(true);
           annoGetter.put(column, obj -> f.get(obj));
-        });
+        }
       }
       for (Method m : methods) {
         CSV csv = m.getAnnotation(CSV.class);
@@ -133,8 +129,10 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
         assertTrue(Modifier.isPublic(m.getModifiers()), "@CSV method must be public. Invalid method: %s", m);
         String name = getOrDefault(csv.name(), "", () -> {
           String n = m.getName();
-          if (n.startsWith("set") && n.length() > 3 && Character.isUpperCase(n.charAt(3))) {
+          if (n.startsWith("get") && n.length() > 3 && Character.isUpperCase(n.charAt(3))) {
             return n.substring(3, 4).toLowerCase() + n.substring(4);
+          } else if (n.startsWith("is") && n.length() > 2 && Character.isUpperCase(n.charAt(2))) {
+            return n.substring(2, 3).toLowerCase() + n.substring(3);
           }
           return n;
         });
@@ -146,11 +144,10 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
         assertTrue(toWrapper(m.getReturnType()).isAssignableFrom(type), "Type must extends the method parameter type: %s", csv);
         assertTrue(type.isAssignableFrom(parser.type()), "CsvValueFormatter is not matched to the type: %s.", csv);
         boolean optional = csv.optional();
-        OptionalUtil.ifEmpty(findColumn(columns, name), () -> {
-          CsvColumn<?> column = CsvColumn.create(name, parser, null, optional);
-          addColumn(column);
+        CsvColumn<?> column = CsvColumn.create(name, parser, null, optional);
+        if (addColumn(column)) {
           annoGetter.put(column, obj -> m.invoke(obj));
-        });
+        }
       }
     }
 
@@ -215,9 +212,11 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
     }
 
     private Object getByGetter(T obj, CsvColumn<?> column) {
-      String getterName = (column.type() == Boolean.class ? "is" : "get") + StringUtil.upperFirst(column.name());
+      String getName = "get" + StringUtil.upperFirst(column.name());
+      String isName = "is" + StringUtil.upperFirst(column.name());
       return methods.stream()
-          .filter(m -> m.getName().equals(getterName))
+          .filter(
+              m -> m.getName().equals(getName) || (toWrapper(m.getReturnType()) == Boolean.class && m.getName().equals(isName)))
           .filter(m -> m.getParameterCount() == 0)
           .filter(m -> m.getReturnType() != void.class)
           .filter(m -> Modifier.isPublic(m.getModifiers()))

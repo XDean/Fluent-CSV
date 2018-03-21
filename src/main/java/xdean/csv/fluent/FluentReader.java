@@ -5,6 +5,7 @@ import static xdean.csv.fluent.Util.assertTrue;
 import static xdean.csv.fluent.Util.findColumn;
 import static xdean.jex.util.lang.ExceptionUtil.uncatch;
 import static xdean.jex.util.lang.ExceptionUtil.uncheck;
+import static xdean.jex.util.lang.PrimitiveTypeUtil.toWrapper;
 import static xdean.jex.util.task.TaskUtil.firstNonNull;
 
 import java.lang.reflect.Constructor;
@@ -34,8 +35,6 @@ import xdean.csv.CsvReader;
 import xdean.csv.CsvValueParser;
 import xdean.jex.extra.function.ActionE2;
 import xdean.jex.log.Logable;
-import xdean.jex.util.OptionalUtil;
-import static xdean.jex.util.lang.PrimitiveTypeUtil.*;
 import xdean.jex.util.reflect.ReflectUtil;
 import xdean.jex.util.string.StringUtil;
 
@@ -68,11 +67,12 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     return map(s -> con.construct(s));
   }
 
-  private void addColumn(CsvColumn<?> column) {
+  private boolean addColumn(CsvColumn<?> column) {
     if (findColumn(columns, column.name()).isPresent()) {
       debug("Column " + column.name() + " already exists.");
+      return false;
     } else {
-      columns.add(column);
+      return columns.add(column);
     }
   }
 
@@ -144,9 +144,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     private final Map<CsvColumn<?>, ActionE2<T, Object, Exception>> annoSetter = new HashMap<>();
 
     public BeanConstructor(Class<T> clz) throws CsvException {
-      if (uncatch(() -> clz.getDeclaredConstructor()) == null) {
-        throw new CsvException("Bean must declare no-arg constructor.");
-      }
+      assertTrue(uncatch(() -> clz.getDeclaredConstructor()) != null, "Bean must declare no-arg constructor.");
       this.clz = clz;
       this.methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
       this.fields = Arrays.asList(ReflectUtil.getAllFields(clz, false));
@@ -176,12 +174,11 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
           defaultSupplier = () -> defaultValue;
         }
         boolean optional = csv.optional();
-        OptionalUtil.ifEmpty(findColumn(columns, name), () -> {
-          CsvColumn<?> column = CsvColumn.create(name, parser, defaultSupplier, optional);
-          addColumn(column);
+        CsvColumn<?> column = CsvColumn.create(name, parser, defaultSupplier, optional);
+        if (addColumn(column)) {
           f.setAccessible(true);
           annoSetter.put(column, (obj, v) -> f.set(obj, v));
-        });
+        }
       }
       for (Method m : methods) {
         CSV csv = m.getAnnotation(CSV.class);
@@ -213,11 +210,10 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
           defaultSupplier = () -> defaultValue;
         }
         boolean optional = csv.optional();
-        OptionalUtil.ifEmpty(findColumn(columns, name), () -> {
-          CsvColumn<?> column = CsvColumn.create(name, parser, defaultSupplier, optional);
-          addColumn(column);
+        CsvColumn<?> column = CsvColumn.create(name, parser, defaultSupplier, optional);
+        if (addColumn(column)) {
           annoSetter.put(column, (obj, v) -> m.invoke(obj, v));
-        });
+        }
       }
     }
 

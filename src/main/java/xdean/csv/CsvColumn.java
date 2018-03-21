@@ -1,5 +1,6 @@
 package xdean.csv;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
@@ -8,8 +9,6 @@ import com.google.common.base.MoreObjects;
 
 public interface CsvColumn<T> {
   String name();
-
-  Class<T> type();
 
   @Nullable
   CsvValueParser<T> parser();
@@ -35,45 +34,7 @@ public interface CsvColumn<T> {
   }
 
   static <T> CsvColumn<T> create(String name, CsvValueParser<T> parser, Supplier<T> defaultValue, boolean optional) {
-    return new CsvColumn<T>() {
-      @Override
-      public String name() {
-        return name;
-      }
-
-      @Override
-      public Class<T> type() {
-        return parser.type();
-      }
-
-      @Override
-      public CsvValueParser<T> parser() {
-        return parser;
-      }
-
-      @Override
-      public CsvValueFormatter<T> formatter() {
-        return null;
-      }
-
-      @Override
-      public Supplier<T> defaultValue() {
-        return defaultValue;
-      }
-
-      @Override
-      public boolean optional() {
-        return optional;
-      }
-
-      @Override
-      public String toString() {
-        return MoreObjects.toStringHelper(this)
-            .add("name", name)
-            .add("optional", optional)
-            .toString();
-      }
-    };
+    return create(name, parser, null, defaultValue, optional);
   }
 
   static <T> CsvColumn<T> create(String name, CsvValueFormatter<T> parser) {
@@ -85,6 +46,11 @@ public interface CsvColumn<T> {
   }
 
   static <T> CsvColumn<T> create(String name, CsvValueFormatter<T> formatter, Supplier<T> defaultValue, boolean optional) {
+    return create(name, null, formatter, defaultValue, optional);
+  }
+
+  static <T> CsvColumn<T> create(String name, CsvValueParser<T> parser, CsvValueFormatter<T> formatter, Supplier<T> defaultValue,
+      boolean optional) {
     return new CsvColumn<T>() {
       @Override
       public String name() {
@@ -92,13 +58,8 @@ public interface CsvColumn<T> {
       }
 
       @Override
-      public Class<T> type() {
-        return formatter.type();
-      }
-
-      @Override
       public CsvValueParser<T> parser() {
-        return null;
+        return parser;
       }
 
       @Override
@@ -114,6 +75,19 @@ public interface CsvColumn<T> {
       @Override
       public boolean optional() {
         return optional;
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hash(name());
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (!(obj instanceof CsvColumn)) {
+          return false;
+        }
+        return Objects.equals(name(), ((CsvColumn<?>) obj).name());
       }
 
       @Override

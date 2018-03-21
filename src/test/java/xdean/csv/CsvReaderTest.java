@@ -132,8 +132,8 @@ public class CsvReaderTest {
     reader
         .addColumn(A.C)
         .readBean(A.class, b -> b
-            .<Integer> addHandler("a", (o, v) -> o.setAPlus5(v))
-            .addHandler(A.C, (o, v) -> o.c = v + 100))
+            .<Integer> addSetter("a", (o, v) -> o.setAPlus5(v))
+            .addSetter(A.C, (o, v) -> o.c = v + 100))
         .from("a,b,c\n1,2,-1\n3,4,-2")
         .test()
         .assertNoErrors()
