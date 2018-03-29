@@ -34,9 +34,9 @@ public class CsvWriterTest {
         .test()
         .assertNoErrors()
         .assertValueCount(3)
-        .assertValues("a, b",
-            "1, 2",
-            "3, 4");
+        .assertValues("a,b",
+            "1,2",
+            "3,4");
   }
 
   @Test
@@ -50,9 +50,9 @@ public class CsvWriterTest {
         .test()
         .assertNoErrors()
         .assertValueCount(3)
-        .assertValues("a, b",
-            "1, 2",
-            "3, 4");
+        .assertValues("a,b",
+            "1,2",
+            "3,4");
   }
 
   @Test
@@ -66,9 +66,9 @@ public class CsvWriterTest {
         .test()
         .assertNoErrors()
         .assertValueCount(3)
-        .assertValues("a, b",
-            "-99, 102",
-            "-97, 104");
+        .assertValues("a,b",
+            "-99,102",
+            "-97,104");
   }
 
   @Test
@@ -78,9 +78,9 @@ public class CsvWriterTest {
         .test()
         .assertNoErrors()
         .assertValueCount(3)
-        .assertValues("a, constant",
-            "1, 100",
-            "2, 100");
+        .assertValues("a,constant",
+            "1,100",
+            "2,100");
   }
 
   @Test
@@ -103,9 +103,9 @@ public class CsvWriterTest {
         .test()
         .assertNoErrors()
         .assertValueCount(3)
-        .assertValues("a, b",
-            "1, ",
-            "2, ");
+        .assertValues("a,b",
+            "1,",
+            "2,");
   }
 
   @Test
@@ -126,9 +126,9 @@ public class CsvWriterTest {
         .test()
         .assertNoErrors()
         .assertValueCount(3)
-        .assertValues("a, b, d, c",
-            "1, 2, 3, true",
-            "4, 5, 6, false");
+        .assertValues("a,b,d,c",
+            "1,2,3,true",
+            "4,5,6,false");
   }
 
   @Test
@@ -151,9 +151,9 @@ public class CsvWriterTest {
         .test()
         .assertNoErrors()
         .assertValueCount(3)
-        .assertValues("a, b, c, d",
-            "1, 2, true, 3",
-            "4, 5, false, 6");
+        .assertValues("a,b,c,d",
+            "1,2,true,3",
+            "4,5,false,6");
   }
 
   @EqualsAndHashCode

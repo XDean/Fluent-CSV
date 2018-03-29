@@ -62,7 +62,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
   private String getHeader() {
     return sortedColumns.stream()
         .map(c -> c.name())
-        .collect(Collectors.joining(splitor + " "));
+        .collect(Collectors.joining(splitor));
   }
 
   @SuppressWarnings("unchecked")
@@ -79,7 +79,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
         strs[index] = formatter.format(value);
       }
     }
-    return Arrays.stream(strs).collect(Collectors.joining(splitor + " "));
+    return Arrays.stream(strs).collect(Collectors.joining(splitor));
   }
 
   private boolean addColumn(CsvColumn<?> column) {

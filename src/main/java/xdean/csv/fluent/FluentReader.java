@@ -54,7 +54,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
 
   @Override
   public Flowable<List<Object>> from(Flowable<String> lines) {
-    return lines.map(String::trim)
+    return lines
         .filter(this::filterComment)
         .doOnNext(this::readHeader)
         .skip(1)
@@ -86,7 +86,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
       if (header != null) {
         return;
       }
-      header = Arrays.asList(line.split(regexSplitor)).stream().map(String::trim).collect(Collectors.toList());
+      header = Arrays.asList(line.split(regexSplitor)).stream().collect(Collectors.toList());
       columnPos = new LinkedHashMap<>();
       for (int i = 0; i < header.size(); i++) {
         String name = header.get(i);
@@ -116,7 +116,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     for (int i = 0; i < result.length; i++) {
       CsvColumn<?> column = columnPos.get(i);
       if (column != null) {
-        String str = split.length > i ? split[i].trim() : "";
+        String str = split.length > i ? split[i] : "";
         Object value;
         if (str.isEmpty()) {
           if (column.defaultValue() == null) {
