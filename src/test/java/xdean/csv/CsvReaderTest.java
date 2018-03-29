@@ -1,9 +1,14 @@
 package xdean.csv;
 
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.Assert.fail;
 import static xdean.csv.CsvColumn.create;
 import static xdean.jex.util.lang.ExceptionUtil.throwIt;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -283,6 +288,13 @@ public class CsvReaderTest {
     TWP twp;
   }
 
+  @CSV(type = Double.class)
+  @Retention(RUNTIME)
+  @Target({ FIELD, METHOD })
+  @interface DoubleColumn {
+
+  }
+
   @Data
   @NoArgsConstructor
   @AllArgsConstructor
@@ -298,7 +310,7 @@ public class CsvReaderTest {
     @CSV(parser = UpperParser.class)
     String name;
 
-    @CSV(type = Double.class)
+    @DoubleColumn
     double money;
 
     House house;

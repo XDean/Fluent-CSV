@@ -25,6 +25,8 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.springframework.core.annotation.AnnotationUtils;
+
 import io.reactivex.Flowable;
 import xdean.csv.CsvColumn;
 import xdean.csv.CsvException;
@@ -149,7 +151,8 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
 
     private <K> void prepare() throws CsvException {
       for (Field f : fields) {
-        CSV csv = f.getAnnotation(CSV.class);
+        CSV csv = AnnotationUtils.getAnnotation(f, CSV.class);
+        System.out.println(f + "\t" + csv);
         if (csv == null) {
           continue;
         }
@@ -177,7 +180,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
         }
       }
       for (Method m : methods) {
-        CSV csv = m.getAnnotation(CSV.class);
+        CSV csv = AnnotationUtils.getAnnotation(m, CSV.class);
         if (csv == null || m.getParameterCount() != 1) {
           continue;
         }

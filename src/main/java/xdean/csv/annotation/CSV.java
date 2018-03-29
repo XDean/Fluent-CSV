@@ -1,5 +1,6 @@
 package xdean.csv.annotation;
 
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -18,7 +19,7 @@ import xdean.csv.CsvValueParser;
  */
 @Documented
 @Retention(RUNTIME)
-@Target({ FIELD, METHOD })
+@Target({ FIELD, METHOD, ANNOTATION_TYPE })
 public @interface CSV {
 
   /**
