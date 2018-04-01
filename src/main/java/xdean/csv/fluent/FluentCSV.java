@@ -34,11 +34,17 @@ public class FluentCSV implements CsvConfig, Logable {
 
   @Override
   public CsvConfig splitor(String splitor) {
-    if (" ".equals(splitor)) {
-      throw new IllegalArgumentException("Splitor can't be \" \"");
-    }
+//    if (" ".equals(splitor)) {
+//      throw new IllegalArgumentException("Splitor can't be \" \"");
+//    }
     this.splitor = splitor;
     return this;
+  }
+
+  @Override
+  public CsvConfig quoter(String quoter) {
+    // TODO Auto-generated method stub
+    return null;
   }
 
   @Override

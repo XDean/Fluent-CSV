@@ -27,6 +27,8 @@ public interface CsvConfig {
    */
   CsvConfig splitor(String splitor) throws IllegalArgumentException;
 
+  CsvConfig quoter(String quoter);
+
   /**
    * Add column to the context.
    */
