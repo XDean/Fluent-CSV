@@ -19,7 +19,7 @@ import xdean.csv.fluent.FluentCSV;
 @SuppressWarnings("unchecked")
 public class CsvWriterTest {
 
-  CsvConfig writer;
+  CsvConfiguration writer;
 
   @Before
   public void setup() throws Exception {

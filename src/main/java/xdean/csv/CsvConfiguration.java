@@ -17,7 +17,7 @@ import xdean.csv.annotation.CSV;
  * @author Dean Xu (XDean@github.com)
  *
  */
-public interface CsvConfig {
+public interface CsvConfiguration {
 
   /**
    * Set splitor. The default splitor is ",". <br>
@@ -25,19 +25,19 @@ public interface CsvConfig {
    *
    * @throws IllegalArgumentException if the splitor is illegal.
    */
-  CsvConfig splitor(String splitor) throws IllegalArgumentException;
+  CsvConfiguration splitor(String splitor) throws IllegalArgumentException;
 
-  CsvConfig quoter(String quoter);
+  CsvConfiguration quoter(String quoter);
 
   /**
    * Add column to the context.
    */
-  CsvConfig addColumn(CsvColumn<?> column) throws IllegalArgumentException;
+  CsvConfiguration addColumn(CsvColumn<?> column) throws IllegalArgumentException;
 
   /**
    * Add several columns to the context.
    */
-  default CsvConfig addColumns(CsvColumn<?>... columns) {
+  default CsvConfiguration addColumns(CsvColumn<?>... columns) {
     Arrays.stream(columns).forEach(this::addColumn);
     return this;
   }

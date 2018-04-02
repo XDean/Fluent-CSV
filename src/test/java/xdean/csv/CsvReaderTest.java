@@ -32,7 +32,7 @@ public class CsvReaderTest {
   private static final Person wenzhe = new Person(2, "WEN-ZHE", 888, House.YES, "");
   private static final Person xian = new Person(3, "XIAN", 998, House.YES, "manager");
 
-  CsvConfig reader;
+  CsvConfiguration reader;
   Path golden;
 
   @Before

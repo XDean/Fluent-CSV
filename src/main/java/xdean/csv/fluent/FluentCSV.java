@@ -7,7 +7,7 @@ import java.util.List;
 
 import io.reactivex.Flowable;
 import xdean.csv.CsvColumn;
-import xdean.csv.CsvConfig;
+import xdean.csv.CsvConfiguration;
 import xdean.csv.CsvException;
 import xdean.csv.CsvReader;
 import xdean.csv.CsvReader.CsvBeanReader;
@@ -15,7 +15,7 @@ import xdean.csv.CsvWriter;
 import xdean.csv.CsvWriter.CsvBeanWriter;
 import xdean.jex.log.Logable;
 
-public class FluentCSV implements CsvConfig, Logable {
+public class FluentCSV implements CsvConfiguration, Logable {
 
   public static FluentCSV create() {
     return new FluentCSV();
@@ -33,7 +33,7 @@ public class FluentCSV implements CsvConfig, Logable {
   }
 
   @Override
-  public CsvConfig splitor(String splitor) {
+  public CsvConfiguration splitor(String splitor) {
 //    if (" ".equals(splitor)) {
 //      throw new IllegalArgumentException("Splitor can't be \" \"");
 //    }
@@ -42,13 +42,13 @@ public class FluentCSV implements CsvConfig, Logable {
   }
 
   @Override
-  public CsvConfig quoter(String quoter) {
+  public CsvConfiguration quoter(String quoter) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public CsvConfig addColumn(CsvColumn<?> column) {
+  public CsvConfiguration addColumn(CsvColumn<?> column) {
     if (findColumn(columns, column.name()).isPresent()) {
       throw new IllegalArgumentException("Column " + column.name() + " already exists.");
     }
