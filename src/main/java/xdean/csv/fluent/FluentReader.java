@@ -83,7 +83,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
       if (header != null) {
         return;
       }
-      header = Arrays.asList(line.split(config.regexSplitor)).stream().collect(Collectors.toList());
+      header = config.split(line);
       columnPos = new LinkedHashMap<>();
       for (int i = 0; i < header.size(); i++) {
         String name = header.get(i);
@@ -107,13 +107,13 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     }
   }
 
-  private List<Object> parse(String line) {
-    String[] split = line.split(config.regexSplitor);
+  private List<Object> parse(String line) throws CsvException {
+    List<String> split = config.split(line);
     Object[] result = new Object[columns.size()];
     for (int i = 0; i < result.length; i++) {
       CsvColumn<?> column = columnPos.get(i);
       if (column != null) {
-        String str = split.length > i ? split[i] : "";
+        String str = split.size() > i ? split.get(i) : "";
         Object value;
         if (str.isEmpty()) {
           if (column.defaultValue() == null) {

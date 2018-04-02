@@ -63,7 +63,7 @@ public class FluentCSV implements CsvConfiguration, Logable {
       quoter(config.quoter());
       splitor(config.splitor());
     }
-    return null;
+    return this;
   }
 
   @Override

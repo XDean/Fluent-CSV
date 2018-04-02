@@ -22,15 +22,22 @@ public interface CsvConfiguration {
   char NO_QUOTER = '\u0000';
 
   char DEFAULT_ESCAPER = '\\';
-  char DEFAULT_QUOTER =NO_QUOTER;
+  char DEFAULT_QUOTER = NO_QUOTER;
   char DEFAULT_SPLITOR = ',';
 
+  /**
+   * Escape character. Default value is {@link #DEFAULT_ESCAPER}.
+   */
   CsvConfiguration escaper(char escaper);
 
+  /**
+   * Quote character, Default value is {@link #DEFAULT_QUOTER}. In quotation,
+   * only quote character and escape character should be escaped.
+   */
   CsvConfiguration quoter(char quoter);
 
   /**
-   * Set splitor. The default splitor is ",". <br>
+   * Set splitor. The default splitor is {@link #DEFAULT_SPLITOR}. <br>
    * Some strings should not be splitor, e.g. " ". They will lead the exception.
    *
    * @throws IllegalArgumentException if the splitor is illegal.

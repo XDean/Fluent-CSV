@@ -3,7 +3,7 @@ package xdean.csv;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static xdean.csv.CsvColumn.create;
 import static xdean.jex.util.lang.ExceptionUtil.throwIt;
 
@@ -25,6 +25,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import xdean.csv.CsvReaderTest.Person.House;
 import xdean.csv.annotation.CSV;
+import xdean.csv.annotation.CsvConfig;
 import xdean.csv.fluent.FluentCSV;
 
 public class CsvReaderTest {
@@ -195,6 +196,19 @@ public class CsvReaderTest {
         .assertError(e -> e.getMessage().contains("Can't find property"));
   }
 
+  @Test
+  public void testEscape() throws Exception {
+    reader.readConfig(F.class)
+        .readBean(F.class)
+        .from("i/:d:b\n1:'2/'3'\n4:'5://6'")
+        .test()
+        .assertNoErrors()
+        .assertValueCount(2)
+        .assertValues(
+            new F(1, "2'3"),
+            new F(4, "5:/6"));
+  }
+
   public static class UpperParser implements CsvValueParser<String> {
     @Override
     public String parse(String value) throws RuntimeException {
@@ -281,6 +295,17 @@ public class CsvReaderTest {
     public void setA(int i) {
       throw new RuntimeException();
     }
+  }
+
+  @CsvConfig(escaper = '/', splitor = ':', quoter = '\'')
+  @EqualsAndHashCode
+  @NoArgsConstructor
+  @AllArgsConstructor
+  static class F {
+    @CSV(name = "i:d")
+    int a;
+    @CSV
+    String b;
   }
 
   static class TWP {
