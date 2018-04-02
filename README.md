@@ -17,15 +17,15 @@ Fluent and Flexible CSV Framework
 
 # [Sample](src/test/java/xdean/csv/Sample.java)
 
-You have a csv file:
+You have a space-delimited file:
 
 *people.csv*
 
 ```csv
-id, name, desc
-1, Mike, Football
-2, Dan, Swim
-3, Alex,  
+id name desc
+1 Mike 'Football&Basketball'
+2 Dan 'Swim and walk'
+3 Alex  
 ```
 
 We can define domain class:
@@ -33,6 +33,7 @@ We can define domain class:
 *Person.java*
 
 ```java
+@CsvConfig(splitor = ' ', quoter='\'')
 class Person{
   @CSV
   int id;
@@ -49,6 +50,7 @@ Then read data by `FluentCSV`
 
 ```java
 FluentCSV.create()
+  .readConfig(Person.class) // read the class's CSV config
   .readBean(Person.class) // read as bean
   .from(Paths.get("people.csv")) // from the file
   .forEach(System.out::println);
@@ -57,7 +59,7 @@ FluentCSV.create()
 You will get:
 
 ```
-Sample.Person(id=1, name=Mike, description=Football)
-Sample.Person(id=2, name=Dan, description=Swim)
+Sample.Person(id=1, name=Mike, description=Football&Basketball)
+Sample.Person(id=2, name=Dan, description=Swim and walk)
 Sample.Person(id=3, name=Alex, description=No Description)
 ```
