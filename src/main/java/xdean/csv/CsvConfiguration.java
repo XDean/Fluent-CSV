@@ -18,6 +18,9 @@ import xdean.csv.annotation.CSV;
  *
  */
 public interface CsvConfiguration {
+  CsvConfiguration escaper(String escaper);
+
+  CsvConfiguration quoter(String quoter);
 
   /**
    * Set splitor. The default splitor is ",". <br>
@@ -27,12 +30,12 @@ public interface CsvConfiguration {
    */
   CsvConfiguration splitor(String splitor) throws IllegalArgumentException;
 
-  CsvConfiguration quoter(String quoter);
-
   /**
    * Add column to the context.
    */
   CsvConfiguration addColumn(CsvColumn<?> column) throws IllegalArgumentException;
+
+  CsvConfiguration readConfig(Class<?> clz);
 
   /**
    * Add several columns to the context.
@@ -52,13 +55,14 @@ public interface CsvConfiguration {
   /********************************** Read ************************************/
 
   /**
-   * Create {@link CsvReader} who reads content as {@code List<Object}. The objects in the list have
-   * the same order with {@link #columns()}(add order).
+   * Create {@link CsvReader} who reads content as {@code List<Object}. The
+   * objects in the list have the same order with {@link #columns()}(add order).
    */
   CsvReader<List<Object>> readList();
 
   /**
-   * Create {@link CsvReader} who reads content as {@code Map<CsvColumn, Object>}.
+   * Create {@link CsvReader} who reads content as
+   * {@code Map<CsvColumn, Object>}.
    */
   default CsvReader<Map<CsvColumn<?>, Object>> readMap() {
     List<CsvColumn<?>> columns = columns();
@@ -72,21 +76,25 @@ public interface CsvConfiguration {
   }
 
   /**
-   * Create {@link CsvBeanReader} who reads content as bean. All &#64;{@link CSV} information will
-   * be loaded.
+   * Create {@link CsvBeanReader} who reads content as bean. All
+   * &#64;{@link CSV} information will be loaded.
    */
   <T> CsvBeanReader<T> readBean(Class<T> bean);
 
-  /********************************** Write ************************************/
+  /**********************************
+   * Write
+   ************************************/
 
   /**
-   * Create {@link CsvWriter} who writes content as {@code List<Object}. The objects in the list
-   * should have the same order with {@link #columns()}(add order).
+   * Create {@link CsvWriter} who writes content as {@code List<Object}. The
+   * objects in the list should have the same order with {@link #columns()}(add
+   * order).
    */
   CsvWriter<List<Object>> writeList();
 
   /**
-   * Create {@link CsvWriter} who writes content as {@code Map<CsvColumn, Object>}.
+   * Create {@link CsvWriter} who writes content as
+   * {@code Map<CsvColumn, Object>}.
    */
   default CsvWriter<Map<CsvColumn<?>, Object>> writeMap() {
     List<CsvColumn<?>> columns = columns();
@@ -95,8 +103,8 @@ public interface CsvConfiguration {
   }
 
   /**
-   * Create {@link CsvBeanWriter} who reads content as bean. All &#64;{@link CSV} information will
-   * be loaded.
+   * Create {@link CsvBeanWriter} who reads content as bean. All
+   * &#64;{@link CSV} information will be loaded.
    */
   <T> CsvBeanWriter<T> writeBean(Class<T> bean);
 }

@@ -5,6 +5,8 @@ import static xdean.csv.fluent.Util.findColumn;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.core.annotation.AnnotationUtils;
+
 import io.reactivex.Flowable;
 import xdean.csv.CsvColumn;
 import xdean.csv.CsvConfiguration;
@@ -13,6 +15,7 @@ import xdean.csv.CsvReader;
 import xdean.csv.CsvReader.CsvBeanReader;
 import xdean.csv.CsvWriter;
 import xdean.csv.CsvWriter.CsvBeanWriter;
+import xdean.csv.annotation.CsvConfig;
 import xdean.jex.log.Logable;
 
 public class FluentCSV implements CsvConfiguration, Logable {
@@ -22,6 +25,8 @@ public class FluentCSV implements CsvConfiguration, Logable {
   }
 
   final List<CsvColumn<?>> columns = new ArrayList<>();
+  String escaper = "\\";
+  String quoter = "";
   String splitor = ",";
 
   private FluentCSV() {
@@ -33,17 +38,33 @@ public class FluentCSV implements CsvConfiguration, Logable {
   }
 
   @Override
-  public CsvConfiguration splitor(String splitor) {
-//    if (" ".equals(splitor)) {
-//      throw new IllegalArgumentException("Splitor can't be \" \"");
-//    }
-    this.splitor = splitor;
+  public CsvConfiguration escaper(String escaper) {
+    this.escaper = escaper;
     return this;
   }
 
   @Override
   public CsvConfiguration quoter(String quoter) {
-    // TODO Auto-generated method stub
+    this.quoter = quoter;
+    return this;
+  }
+
+  @Override
+  public CsvConfiguration splitor(String splitor) {
+    this.splitor = splitor;
+    return this;
+  }
+
+  @Override
+  public CsvConfiguration readConfig(Class<?> clz) {
+    CsvConfig config = AnnotationUtils.getAnnotation(clz, CsvConfig.class);
+    if (config == null) {
+      warn("There is no @CsvConfig on " + clz);
+    } else {
+      escaper(config.escaper());
+      quoter(config.quoter());
+      splitor(config.splitor());
+    }
     return null;
   }
 

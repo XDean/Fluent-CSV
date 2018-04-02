@@ -12,5 +12,9 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 @Target({ ANNOTATION_TYPE, TYPE })
 public @interface CsvConfig {
+  String escaper() default "\\";
 
+  String quoter() default "";
+
+  String splitor() default ",";
 }
