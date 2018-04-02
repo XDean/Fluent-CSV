@@ -10,7 +10,7 @@ import com.google.common.escape.Escapers;
 import xdean.csv.CsvConfiguration;
 
 @Immutable
-public class Configuration {
+public class Configuration extends Escaper {
   public final char escaper;
   public final char quoter;
   public final char splitor;
@@ -24,14 +24,15 @@ public class Configuration {
     this.quoter = quoter;
     this.splitor = splitor;
     this.regexSplitor = Pattern.quote(splitor + "");
-    this.es = buildEscaper();
+    this.es = initEscaper();
   }
 
-  public Escaper toEscaper() {
-    return es;
+  @Override
+  public String escape(String string) {
+    return es.escape(string);
   }
 
-  private Escaper buildEscaper() {
+  private Escaper initEscaper() {
     Escapers.Builder builder = Escapers.builder()
         .addEscape('\b', escaper + "b")
         .addEscape('\t', escaper + "t")
@@ -44,6 +45,7 @@ public class Configuration {
     if (quoter != '\u0000') {
       builder.addEscape(quoter, escaper + "" + quoter);
     }
+    builder.addEscape(splitor, escaper + "" + splitor);
     return builder.build();
   }
 
@@ -54,7 +56,7 @@ public class Configuration {
   public static class Builder {
     private char escaper = CsvConfiguration.DEFAULT_ESCAPER;
     private char quoter = CsvConfiguration.DEFAULT_QUOTER;
-    private char splitor = CsvConfiguration .DEFAULT_SPLITOR;
+    private char splitor = CsvConfiguration.DEFAULT_SPLITOR;
 
     public Builder escaper(char escaper) {
       this.escaper = escaper;

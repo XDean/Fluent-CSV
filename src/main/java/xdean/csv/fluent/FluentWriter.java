@@ -61,7 +61,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
 
   private String getHeader() {
     return sortedColumns.stream()
-        .map(c -> c.name())
+        .map(c -> config.escape(c.name()))
         .collect(Collectors.joining(config.splitor + ""));
   }
 
@@ -76,7 +76,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
         CsvValueFormatter<Object> formatter = (CsvValueFormatter<Object>) column.formatter();
         int index = sortedColumns.indexOf(column);
         assertTrue(formatter.type().isInstance(value), "%s is not instance of %s", value, formatter.type());
-        strs[index] = formatter.format(value);
+        strs[index] = config.escape(formatter.format(value));
       }
     }
     return Arrays.stream(strs).collect(Collectors.joining(config.splitor + ""));

@@ -156,6 +156,19 @@ public class CsvWriterTest {
             "4,5,false,6");
   }
 
+  @Test
+  public void testEscape() throws Exception {
+    writer.writeBean(E.class)
+        .from(new E(1, "2\n3"), new E(4, "5,6"))
+        .test()
+        .assertNoErrors()
+        .assertValueCount(3)
+        .assertValues(
+            "i\\,d,b",
+            "1,2\\n3",
+            "4,5\\,6");
+  }
+
   @EqualsAndHashCode
   @NoArgsConstructor
   @AllArgsConstructor
@@ -234,5 +247,15 @@ public class CsvWriterTest {
     public int getA() {
       throw new RuntimeException();
     }
+  }
+
+  @EqualsAndHashCode
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class E {
+    @CSV(name = "i,d")
+    int a;
+    @CSV
+    String b;
   }
 }
