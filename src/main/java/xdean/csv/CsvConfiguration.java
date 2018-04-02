@@ -39,10 +39,16 @@ public interface CsvConfiguration {
   /**
    * Set splitor. The default splitor is {@link #DEFAULT_SPLITOR}. <br>
    * Some strings should not be splitor, e.g. " ". They will lead the exception.
-   *
-   * @throws IllegalArgumentException if the splitor is illegal.
    */
-  CsvConfiguration splitor(char splitor) throws IllegalArgumentException;
+  CsvConfiguration splitor(char splitor);
+
+  /**
+   * Ignore leading space or not.
+   *
+   * @apiNote CSV file usually add space after splitor for beauty. Use this
+   *          option to ignore it. But space in quote will not be ignored.
+   */
+  CsvConfiguration ignoreLeadingSpace(boolean b);
 
   /**
    * Add column to the context.

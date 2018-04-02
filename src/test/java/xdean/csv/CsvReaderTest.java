@@ -153,7 +153,7 @@ public class CsvReaderTest {
 
   @Test
   public void testWrongParser() throws Exception {
-    reader.readBean(TWP.class)
+    reader.readBean(WrongParser.class)
         .from("")
         .test()
         .assertError(CsvException.class)
@@ -200,13 +200,13 @@ public class CsvReaderTest {
   public void testEscape() throws Exception {
     reader.readConfig(F.class)
         .readBean(F.class)
-        .from("i/:d:b\n1:'2/'3'\n4:'5:///:6/n'")
+        .from("i/:d:b\n1:'2/'3'\n4: '5:///:6/n'")
         .test()
         .assertNoErrors()
         .assertValueCount(2)
         .assertValues(
             new F(1, "2'3"),
-            new F(4, "5:/:6\n"));
+            new F(4, " 5:/:6\n"));
   }
 
   @Test
@@ -232,6 +232,15 @@ public class CsvReaderTest {
         .test()
         .assertError(CsvException.class)
         .assertError(e -> e.getMessage().contains("cannot be escaped"));
+  }
+
+  @Test
+  public void testWrongMethod() throws Exception {
+    reader.readBean(WrongMethod.class)
+        .from("")
+        .test()
+        .assertError(CsvException.class)
+        .assertError(e -> e.getMessage().contains("must have only one paramter"));
   }
 
   public static class UpperParser implements CsvValueParser<String> {
@@ -322,7 +331,7 @@ public class CsvReaderTest {
     }
   }
 
-  @CsvConfig(escaper = '/', splitor = ':', quoter = '\'')
+  @CsvConfig(escaper = '/', splitor = ':', quoter = '\'', ignoreLeadingSpace = false)
   @EqualsAndHashCode
   @NoArgsConstructor
   @AllArgsConstructor
@@ -333,9 +342,15 @@ public class CsvReaderTest {
     String b;
   }
 
-  static class TWP {
+  static class WrongParser {
     @CSV
-    TWP twp;
+    WrongParser twp;
+  }
+
+  static class WrongMethod {
+    @CSV
+    public void func(int a, int b) {
+    }
   }
 
   @CSV(type = Double.class)

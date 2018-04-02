@@ -19,4 +19,7 @@ public @interface CsvConfig {
   char quoter() default CsvConfiguration.NO_QUOTER;
 
   char splitor() default CsvConfiguration.DEFAULT_SPLITOR;
+
+  @OnlyForRead
+  boolean ignoreLeadingSpace() default true;
 }

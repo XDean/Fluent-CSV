@@ -54,6 +54,12 @@ public class FluentCSV implements CsvConfiguration, Logable {
   }
 
   @Override
+  public CsvConfiguration ignoreLeadingSpace(boolean b) {
+    configuration.ignoreLeadingSpace(b);
+    return this;
+  }
+
+  @Override
   public CsvConfiguration readConfig(Class<?> clz) {
     CsvConfig config = AnnotationUtils.getAnnotation(clz, CsvConfig.class);
     if (config == null) {
@@ -62,6 +68,7 @@ public class FluentCSV implements CsvConfiguration, Logable {
       escaper(config.escaper());
       quoter(config.quoter());
       splitor(config.splitor());
+      ignoreLeadingSpace(config.ignoreLeadingSpace());
     }
     return this;
   }

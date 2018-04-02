@@ -178,9 +178,10 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
       }
       for (Method m : methods) {
         CSV csv = AnnotationUtils.getAnnotation(m, CSV.class);
-        if (csv == null || m.getParameterCount() != 1) {
+        if (csv == null) {
           continue;
         }
+        assertTrue(m.getParameterCount() == 1, "@CSV method must have only one paramter: %s", m);
         assertTrue(Modifier.isPublic(m.getModifiers()), "@CSV method must be public. Invalid method: %s", m);
         String name = getOrDefault(csv.name(), "", () -> {
           String n = m.getName();

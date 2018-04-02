@@ -24,7 +24,6 @@ import xdean.jex.log.Logable;
 
 @Immutable
 public class Configuration implements Logable {
-
   private static final BiMap<Character, Character> ESCAPE_CHARS = ImmutableBiMap.<Character, Character> builder()
       .put('b', '\b')
       .put('t', '\t')
@@ -38,15 +37,17 @@ public class Configuration implements Logable {
   public final char escaper;
   public final char quoter;
   public final char splitor;
+  public final boolean ignoreLeadingSpace;
 
   public final String regexSplitor;
 
   private final Escaper es;
 
-  private Configuration(char escaper, char quoter, char splitor) {
+  private Configuration(char escaper, char quoter, char splitor, boolean ignoreLeadingSpace) {
     this.escaper = escaper;
     this.quoter = quoter;
     this.splitor = splitor;
+    this.ignoreLeadingSpace = ignoreLeadingSpace;
     this.regexSplitor = Pattern.quote(splitor + "");
     this.es = initEscaper();
   }
@@ -117,15 +118,15 @@ public class Configuration implements Logable {
           result.add(sb.toString());
           sb.setLength(0);
         } else {
-          sb.append(c);
+          append(c);
         }
         break;
       case QUOTE_ESCAPE:
       case ESCAPE:
         if (c == quoter || c == escaper || c == splitor) {
-          sb.append(c);
+          append(c);
         } else if (ESCAPE_CHARS.containsKey(c)) {
-          sb.append(ESCAPE_CHARS.get(c));
+          append(ESCAPE_CHARS.get(c));
         } else {
           onError(new CsvException("'%s' cannot be escaped. (on position %d)", c, index));
         }
@@ -137,7 +138,7 @@ public class Configuration implements Logable {
         } else if (c == escaper) {
           status = EscapeType.QUOTE_ESCAPE;
         } else {
-          sb.append(c);
+          append(c);
         }
         break;
       }
@@ -170,12 +171,23 @@ public class Configuration implements Logable {
         break;
       }
     }
+
+    private void append(char c) {
+      if (ignoreLeadingSpace &&
+          status == EscapeType.NORMAL &&
+          sb.length() == 0 &&
+          String.valueOf(c).trim().length() == 0) {
+        return;
+      }
+      sb.append(c);
+    }
   }
 
   public static class Builder {
     private char escaper = CsvConfiguration.DEFAULT_ESCAPER;
     private char quoter = CsvConfiguration.DEFAULT_QUOTER;
     private char splitor = CsvConfiguration.DEFAULT_SPLITOR;
+    private boolean ignoreLeadingSpace = true;
 
     public Builder escaper(char escaper) {
       this.escaper = escaper;
@@ -192,8 +204,13 @@ public class Configuration implements Logable {
       return this;
     }
 
+    public Builder ignoreLeadingSpace(boolean b) {
+      this.ignoreLeadingSpace = b;
+      return this;
+    }
+
     public Configuration build() {
-      return new Configuration(escaper, quoter, splitor);
+      return new Configuration(escaper, quoter, splitor, ignoreLeadingSpace);
     }
   }
 }
