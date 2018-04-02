@@ -25,9 +25,7 @@ public class FluentCSV implements CsvConfiguration, Logable {
   }
 
   final List<CsvColumn<?>> columns = new ArrayList<>();
-  String escaper = "\\";
-  String quoter = "";
-  String splitor = ",";
+  final Configuration.Builder configuration = Configuration.builder();
 
   private FluentCSV() {
   }
@@ -38,20 +36,20 @@ public class FluentCSV implements CsvConfiguration, Logable {
   }
 
   @Override
-  public CsvConfiguration escaper(String escaper) {
-    this.escaper = escaper;
+  public CsvConfiguration escaper(char escaper) {
+    configuration.escaper(escaper);
     return this;
   }
 
   @Override
-  public CsvConfiguration quoter(String quoter) {
-    this.quoter = quoter;
+  public CsvConfiguration quoter(char quoter) {
+    configuration.quoter(quoter);
     return this;
   }
 
   @Override
-  public CsvConfiguration splitor(String splitor) {
-    this.splitor = splitor;
+  public CsvConfiguration splitor(char splitor) {
+    configuration.splitor(splitor);
     return this;
   }
 

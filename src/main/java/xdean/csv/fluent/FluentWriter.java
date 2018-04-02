@@ -33,14 +33,14 @@ import xdean.jex.util.reflect.ReflectUtil;
 import xdean.jex.util.string.StringUtil;
 
 public class FluentWriter implements CsvWriter<List<Object>>, Logable {
-  private final String splitor;
+  private final Configuration config;
   private final List<CsvColumn<?>> columns;
   private List<CsvColumn<?>> sortedColumns;
 
   public FluentWriter(FluentCSV fluentCsv) {
     this.columns = new ArrayList<>(fluentCsv.columns);
     this.sortedColumns = columns;
-    this.splitor = fluentCsv.splitor;
+    this.config = fluentCsv.configuration.build();
   }
 
   @Override
@@ -62,7 +62,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
   private String getHeader() {
     return sortedColumns.stream()
         .map(c -> c.name())
-        .collect(Collectors.joining(splitor));
+        .collect(Collectors.joining(config.splitor + ""));
   }
 
   @SuppressWarnings("unchecked")
@@ -79,7 +79,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
         strs[index] = formatter.format(value);
       }
     }
-    return Arrays.stream(strs).collect(Collectors.joining(splitor));
+    return Arrays.stream(strs).collect(Collectors.joining(config.splitor + ""));
   }
 
   private boolean addColumn(CsvColumn<?> column) {

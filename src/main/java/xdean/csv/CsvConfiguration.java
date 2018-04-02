@@ -18,9 +18,16 @@ import xdean.csv.annotation.CSV;
  *
  */
 public interface CsvConfiguration {
-  CsvConfiguration escaper(String escaper);
 
-  CsvConfiguration quoter(String quoter);
+  char NO_QUOTER = '\u0000';
+
+  char DEFAULT_ESCAPER = '\\';
+  char DEFAULT_QUOTER =NO_QUOTER;
+  char DEFAULT_SPLITOR = ',';
+
+  CsvConfiguration escaper(char escaper);
+
+  CsvConfiguration quoter(char quoter);
 
   /**
    * Set splitor. The default splitor is ",". <br>
@@ -28,7 +35,7 @@ public interface CsvConfiguration {
    *
    * @throws IllegalArgumentException if the splitor is illegal.
    */
-  CsvConfiguration splitor(String splitor) throws IllegalArgumentException;
+  CsvConfiguration splitor(char splitor) throws IllegalArgumentException;
 
   /**
    * Add column to the context.

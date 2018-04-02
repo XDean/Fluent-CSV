@@ -8,13 +8,15 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import xdean.csv.CsvConfiguration;
+
 @Documented
 @Retention(RUNTIME)
 @Target({ ANNOTATION_TYPE, TYPE })
 public @interface CsvConfig {
-  String escaper() default "\\";
+  char escaper() default CsvConfiguration.DEFAULT_ESCAPER;
 
-  String quoter() default "";
+  char quoter() default CsvConfiguration.NO_QUOTER;
 
-  String splitor() default ",";
+  char splitor() default CsvConfiguration.DEFAULT_SPLITOR;
 }

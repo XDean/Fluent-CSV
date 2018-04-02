@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.core.annotation.AnnotationUtils;
@@ -40,16 +39,14 @@ import xdean.jex.util.string.StringUtil;
 
 public class FluentReader implements CsvReader<List<Object>>, Logable {
   private final List<CsvColumn<?>> columns;
-  private final String splitor;
-  private final String regexSplitor;
+  private final Configuration config;
   private List<String> header;
   private Map<Integer, CsvColumn<?>> columnPos;
   private List<CsvColumn<?>> missedColumns;
 
   public FluentReader(FluentCSV fluentCsv) {
     this.columns = new ArrayList<>(fluentCsv.columns);
-    this.splitor = fluentCsv.splitor;
-    this.regexSplitor = Pattern.quote(splitor);
+    this.config = fluentCsv.configuration.build();
   }
 
   @Override
@@ -86,7 +83,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
       if (header != null) {
         return;
       }
-      header = Arrays.asList(line.split(regexSplitor)).stream().collect(Collectors.toList());
+      header = Arrays.asList(line.split(config.regexSplitor)).stream().collect(Collectors.toList());
       columnPos = new LinkedHashMap<>();
       for (int i = 0; i < header.size(); i++) {
         String name = header.get(i);
@@ -111,7 +108,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
   }
 
   private List<Object> parse(String line) {
-    String[] split = line.split(regexSplitor);
+    String[] split = line.split(config.regexSplitor);
     Object[] result = new Object[columns.size()];
     for (int i = 0; i < result.length; i++) {
       CsvColumn<?> column = columnPos.get(i);

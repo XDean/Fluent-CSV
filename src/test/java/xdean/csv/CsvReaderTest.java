@@ -62,7 +62,7 @@ public class CsvReaderTest {
 
   @Test
   public void testSplitor() throws Exception {
-    reader.splitor(" ")
+    reader.splitor(' ')
         .readBean(A.class)
         .from("a b\n1 2\n 3\n4 ")
         .test()
