@@ -200,13 +200,38 @@ public class CsvReaderTest {
   public void testEscape() throws Exception {
     reader.readConfig(F.class)
         .readBean(F.class)
-        .from("i/:d:b\n1:'2/'3'\n4:'5://6'")
+        .from("i/:d:b\n1:'2/'3'\n4:'5:///:6/n'")
         .test()
         .assertNoErrors()
         .assertValueCount(2)
         .assertValues(
             new F(1, "2'3"),
-            new F(4, "5:/6"));
+            new F(4, "5:/:6\n"));
+  }
+
+  @Test
+  public void testWrongEscape() throws Exception {
+    reader
+        .readConfig(F.class)
+        .readBean(F.class)
+        .from("i/:d:b\n1:2/")
+        .test()
+        .assertError(CsvException.class)
+        .assertError(e -> e.getMessage().contains("Can't end with escaper"));
+    reader
+        .readConfig(F.class)
+        .readBean(F.class)
+        .from("i/:d:b\n1:'")
+        .test()
+        .assertError(CsvException.class)
+        .assertError(e -> e.getMessage().contains("The quote must close"));
+    reader
+        .readConfig(F.class)
+        .readBean(F.class)
+        .from("i/:d:b\n1:2/1")
+        .test()
+        .assertError(CsvException.class)
+        .assertError(e -> e.getMessage().contains("cannot be escaped"));
   }
 
   public static class UpperParser implements CsvValueParser<String> {

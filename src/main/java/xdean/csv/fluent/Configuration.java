@@ -51,12 +51,8 @@ public class Configuration implements Logable {
     this.es = initEscaper();
   }
 
-  public String escape(String string) throws CsvException {
-    try {
-      return es.escape(string);
-    } catch (RuntimeException e) {
-      throw new CsvException(e);
-    }
+  public String escape(String string) {
+    return es.escape(string);
   }
 
   public List<String> split(String line) throws CsvException {

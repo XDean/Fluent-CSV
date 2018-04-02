@@ -3,7 +3,6 @@ package xdean.csv.fluent;
 import static xdean.csv.fluent.Util.assertTrue;
 import static xdean.csv.fluent.Util.findColumn;
 import static xdean.jex.util.lang.ExceptionUtil.uncatch;
-import static xdean.jex.util.lang.ExceptionUtil.uncheck;
 import static xdean.jex.util.lang.PrimitiveTypeUtil.toWrapper;
 import static xdean.jex.util.task.TaskUtil.firstNonNull;
 
@@ -62,7 +61,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
 
   private String getHeader() {
     return sortedColumns.stream()
-        .map(c -> uncheck(() -> config.escape(c.name())))
+        .map(c -> config.escape(c.name()))
         .collect(Collectors.joining(config.splitor + ""));
   }
 
