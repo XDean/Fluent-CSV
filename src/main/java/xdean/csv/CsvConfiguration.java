@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import xdean.csv.CsvReader.CsvBeanReader;
 import xdean.csv.CsvWriter.CsvBeanWriter;
 import xdean.csv.annotation.CSV;
+import xdean.fluent.Fluent;
 
 /**
  * Common CSV configuration for both read and write.
@@ -17,7 +18,7 @@ import xdean.csv.annotation.CSV;
  * @author Dean Xu (XDean@github.com)
  *
  */
-public interface CsvConfiguration {
+public interface CsvConfiguration extends Fluent<CsvConfiguration>{
 
   char NO_QUOTER = '\u0000';
 
@@ -86,7 +87,7 @@ public interface CsvConfiguration {
    */
   default CsvReader<Map<CsvColumn<?>, Object>> readMap() {
     List<CsvColumn<?>> columns = columns();
-    return readList().map(l -> {
+    return readList().mapTo(l -> {
       Map<CsvColumn<?>, Object> map = new LinkedHashMap<>();
       for (int i = 0; i < columns.size(); i++) {
         map.put(columns.get(i), l.get(i));
@@ -118,7 +119,7 @@ public interface CsvConfiguration {
    */
   default CsvWriter<Map<CsvColumn<?>, Object>> writeMap() {
     List<CsvColumn<?>> columns = columns();
-    return writeList().<Map<CsvColumn<?>, Object>> map(
+    return writeList().<Map<CsvColumn<?>, Object>> mapFrom(
         m -> m.values().stream().sorted(Comparator.comparing(columns::indexOf)).collect(Collectors.toList()));
   }
 

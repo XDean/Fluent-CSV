@@ -11,6 +11,7 @@ import java.util.function.BiConsumer;
 
 import io.reactivex.Flowable;
 import io.reactivex.functions.Function;
+import xdean.fluent.Fluent;
 
 /**
  * CSV reader.
@@ -20,7 +21,7 @@ import io.reactivex.functions.Function;
  * @param <T> the output type
  */
 @FunctionalInterface
-public interface CsvReader<T> {
+public interface CsvReader<T> extends Fluent<CsvReader<T>> {
 
   /**
    * Read from lines.
@@ -33,7 +34,7 @@ public interface CsvReader<T> {
    * @param func the transform function
    * @return the {@code CsvReader<R>}
    */
-  default <R> CsvReader<R> map(Function<T, R> func) {
+  default <R> CsvReader<R> mapTo(Function<T, R> func) {
     return lines -> from(lines).map(func);
   }
 
@@ -86,7 +87,8 @@ public interface CsvReader<T> {
     }
 
     /**
-     * Add custom setter for the named column. It will overwrite original setter.
+     * Add custom setter for the named column. It will overwrite original
+     * setter.
      */
     default <E> CsvBeanReader<T> addSetter(String column, BiConsumer<T, E> setter) {
       return this;

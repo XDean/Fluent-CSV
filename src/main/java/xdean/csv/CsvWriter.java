@@ -5,17 +5,18 @@ import java.util.Comparator;
 import java.util.function.Function;
 
 import io.reactivex.Flowable;
+import xdean.fluent.Fluent;
 
 /**
  * CSV writer.
  *
- * @implNote To keep the interface functional, some methods have a empty default implementation.
- *           Implementations should override them.
+ * @implNote To keep the interface functional, some methods have a empty default
+ *           implementation. Implementations should override them.
  * @author Dean Xu (XDean@github.com)
  * @param <T> the input type
  */
 @FunctionalInterface
-public interface CsvWriter<T> {
+public interface CsvWriter<T> extends Fluent<CsvWriter<T>> {
   /**
    * Write from {@link Flowable} data.
    */
@@ -46,7 +47,7 @@ public interface CsvWriter<T> {
   /**
    * Map the input R to T.
    */
-  default <R> CsvWriter<R> map(io.reactivex.functions.Function<R, T> func) {
+  default <R> CsvWriter<R> mapFrom(io.reactivex.functions.Function<R, T> func) {
     return lines -> from(lines.map(func));
   }
 
@@ -63,7 +64,8 @@ public interface CsvWriter<T> {
     }
 
     /**
-     * Add custom getter for the named column. It will overwrite original getter.
+     * Add custom getter for the named column. It will overwrite original
+     * getter.
      */
     default <E> CsvBeanWriter<T> addGetter(String column, Function<T, E> getter) {
       return this;

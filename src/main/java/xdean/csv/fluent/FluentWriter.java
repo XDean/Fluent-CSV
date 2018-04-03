@@ -156,7 +156,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
 
     @Override
     public Flowable<String> from(Flowable<T> data) {
-      return FluentWriter.this.map(this::deconstruct).from(data);
+      return FluentWriter.this.mapFrom(this::deconstruct).from(data);
     }
 
     @Override
