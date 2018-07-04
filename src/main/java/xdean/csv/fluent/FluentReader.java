@@ -149,7 +149,6 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     private <K> void prepare() throws CsvException {
       for (Field f : fields) {
         CSV csv = AnnotationUtils.getAnnotation(f, CSV.class);
-        System.out.println(f + "\t" + csv);
         if (csv == null) {
           continue;
         }
