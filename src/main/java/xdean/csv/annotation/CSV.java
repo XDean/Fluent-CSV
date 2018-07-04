@@ -9,6 +9,8 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import org.springframework.core.annotation.AliasFor;
+
 import xdean.csv.CsvValueFormatter;
 import xdean.csv.CsvValueParser;
 
@@ -23,6 +25,12 @@ import xdean.csv.CsvValueParser;
 public @interface CSV {
 
   /**
+   * Alias of name
+   */
+  @AliasFor("name")
+  String value() default "";
+
+  /**
    * The column name.
    * <h3>Default value</h3>
    * <ul>
@@ -35,6 +43,7 @@ public @interface CSV {
    * </li>
    * </ul>
    */
+  @AliasFor("value")
   String name() default "";
 
   /**
@@ -57,8 +66,8 @@ public @interface CSV {
   Class<? extends CsvValueParser> parser() default CsvValueParser.class;
 
   /**
-   * The parser to write value. The default value is from {@link CsvValueFormatter#toString(Class)} by
-   * {@link #type()}.
+   * The parser to write value. The default value is from {@link CsvValueFormatter#toString(Class)}
+   * by {@link #type()}.
    */
   @OnlyForWrite
   @SuppressWarnings("rawtypes")
