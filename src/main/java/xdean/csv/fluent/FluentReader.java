@@ -2,7 +2,6 @@ package xdean.csv.fluent;
 
 import static java.lang.String.format;
 import static xdean.csv.fluent.Util.findColumn;
-import static xdean.jex.util.lang.ExceptionUtil.uncheck;
 import static xdean.jex.util.lang.PrimitiveTypeUtil.toWrapper;
 import static xdean.jex.util.task.TaskUtil.firstNonNull;
 
@@ -10,6 +9,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,9 +37,9 @@ import xdean.jex.util.reflect.AnnotationUtil;
 import xdean.jex.util.reflect.ReflectUtil;
 import xdean.jex.util.string.StringUtil;
 
-public class FluentReader implements CsvReader<List<Object>>, Logable {
+public class FluentReader implements CsvReader<Map<CsvColumn<?>, Object>>, Logable {
 
-  private static final CSV DEFAULT_CSV = AnnotationUtil.createAnnotationFromMap(CSV.class, Collections.emptyMap());
+  private static final CSV DEFAULT_CSV_ANNO = AnnotationUtil.createAnnotationFromMap(CSV.class, Collections.emptyMap());
   private final List<CsvColumn<?>> columns;
   private final Configuration config;
   private List<String> header;
@@ -52,7 +52,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
   }
 
   @Override
-  public Flowable<List<Object>> from(Flowable<String> lines) {
+  public Flowable<Map<CsvColumn<?>, Object>> from(Flowable<String> lines) {
     return lines
         .filter(this::filterComment)
         .doOnNext(this::readHeader)
@@ -109,27 +109,32 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     }
   }
 
-  private List<Object> parse(String line) throws CsvException {
+  private Map<CsvColumn<?>, Object> parse(String line) throws CsvException {
     List<String> split = config.split(line);
-    Object[] result = new Object[columns.size()];
-    for (int i = 0; i < result.length; i++) {
+    Map<CsvColumn<?>, Object> result = new HashMap<>();
+    for (int i = 0; i < columns.size(); i++) {
       CsvColumn<?> column = columnPos.get(i);
       if (column != null) {
         String str = split.size() > i ? split.get(i) : "";
         Object value;
         if (str.isEmpty()) {
           if (column.defaultValue() == null) {
-            continue;
+            if (column.parser().type() == String.class) {
+              value = str;
+            } else {
+              continue;
+            }
+          } else {
+            value = column.defaultValue().get();
           }
-          value = column.defaultValue().get();
         } else {
           value = column.parser().parse(str);
         }
-        result[columns.indexOf(column)] = value;
+        result.put(column, value);
       }
     }
-    missedColumns.forEach(c -> result[columns.indexOf(c)] = c.defaultValue().get());
-    return Arrays.asList(result);
+    missedColumns.forEach(c -> result.put(c, c.defaultValue().get()));
+    return Collections.unmodifiableMap(result);
   }
 
   @SuppressWarnings("unchecked")
@@ -138,6 +143,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     private final Constructor<T> constructor;
     private final List<Method> methods;
     private final List<Field> fields;
+    private final List<CsvColumn<?>> parameters = new ArrayList<>(1);
     private final Map<CsvColumn<?>, BiConsumer<T, Object>> customSetter = new HashMap<>();
     private final Map<CsvColumn<?>, ActionE2<T, Object, Exception>> annoSetter = new HashMap<>();
 
@@ -173,6 +179,31 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     }
 
     private <K> void prepare() throws CsvException {
+      for (Parameter p : constructor.getParameters()) {
+        CSV find = AnnotationUtils.getAnnotation(p, CSV.class);
+        CSV csv = find == null ? DEFAULT_CSV_ANNO : find;
+        String name = getOrDefault(csv, CSV::name, p::getName);
+        Class<?> type = toWrapper(getOrDefault(csv, CSV::type, p::getType));
+        CsvValueParser<K> parser = firstNonNull(
+            () -> getOrDefault(csv, CSV::parser, null).newInstance(),
+            () -> CsvValueParser.forType(type))
+                .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
+        CsvException.assertTrue(toWrapper(p.getType()).isAssignableFrom(type), "Type must extends the parameter's type: %s", csv);
+        CsvException.assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", csv);
+        String defaultStr = csv.defaultValue();
+        Supplier<K> defaultSupplier;
+        if (defaultStr.equals(DEFAULT_CSV_ANNO.defaultValue())) {
+          defaultSupplier = null;
+        } else {
+          K defaultValue = parser.parse(defaultStr);
+          defaultSupplier = () -> defaultValue;
+        }
+        boolean optional = csv.optional();
+        CsvColumn<?> column = CsvColumn.create(name, parser, defaultSupplier, optional);
+        if (addColumn(column)) {
+          parameters.add(column);
+        }
+      }
       for (Field f : fields) {
         CSV csv = AnnotationUtils.getAnnotation(f, CSV.class);
         if (csv == null) {
@@ -184,13 +215,11 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
             () -> getOrDefault(csv, CSV::parser, null).newInstance(),
             () -> CsvValueParser.forType(type))
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-        Object[] args = { csv };
-        CsvException.assertTrue(toWrapper(f.getType()).isAssignableFrom(type), "Type must extends the field's type: %s", args);
-        Object[] args1 = { csv };
-        CsvException.assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", args1);
+        CsvException.assertTrue(toWrapper(f.getType()).isAssignableFrom(type), "Type must extends the field's type: %s", csv);
+        CsvException.assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", csv);
         String defaultStr = csv.defaultValue();
         Supplier<K> defaultSupplier;
-        if (defaultStr.equals("defaultValue")) {
+        if (defaultStr.equals(DEFAULT_CSV_ANNO.defaultValue())) {
           defaultSupplier = null;
         } else {
           K defaultValue = parser.parse(defaultStr);
@@ -205,13 +234,10 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
       }
       for (Method m : methods) {
         CSV csv = AnnotationUtils.getAnnotation(m, CSV.class);
-        if (csv == null) {
+        if (csv == null || m.getParameterCount() != 1) {
           continue;
         }
-        Object[] args = { m };
-        CsvException.assertTrue(m.getParameterCount() == 1, "@CSV method must have only one paramter: %s", args);
-        Object[] args1 = { m };
-        CsvException.assertTrue(Modifier.isPublic(m.getModifiers()), "@CSV method must be public. Invalid method: %s", args1);
+        CsvException.assertTrue(Modifier.isPublic(m.getModifiers()), "@CSV method must be public. Invalid method: %s", m);
         String name = getOrDefault(csv, CSV::name, () -> {
           String n = m.getName();
           if (n.startsWith("set") && n.length() > 3 && Character.isUpperCase(n.charAt(3))) {
@@ -224,14 +250,12 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
             () -> getOrDefault(csv, CSV::parser, null).newInstance(),
             () -> CsvValueParser.forType(type))
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-        Object[] args2 = { csv };
         CsvException.assertTrue(toWrapper(m.getParameterTypes()[0]).isAssignableFrom(type),
-            "Type must extends the method parameter type: %s", args2);
-        Object[] args3 = { csv };
-        CsvException.assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", args3);
+            "Type must extends the method parameter type: %s", csv);
+        CsvException.assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", csv);
         String defaultStr = csv.defaultValue();
         Supplier<K> defaultSupplier;
-        if (defaultStr.equals("defaultValue")) {
+        if (defaultStr.equals(DEFAULT_CSV_ANNO.defaultValue())) {
           defaultSupplier = null;
         } else {
           K defaultValue = parser.parse(defaultStr);
@@ -266,7 +290,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
 
     private <V> V getOrDefault(CSV userCsv, Function<CSV, V> attribute, Supplier<V> def) {
       V userValue = attribute.apply(userCsv);
-      V defaultValue = attribute.apply(DEFAULT_CSV);
+      V defaultValue = attribute.apply(DEFAULT_CSV_ANNO);
       if (Objects.equals(userValue, defaultValue)) {
         return def.get();
       } else {
@@ -274,16 +298,20 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
       }
     }
 
-    private T construct(List<Object> line) throws CsvException {
-      T obj = uncheck(() -> {
-        Constructor<T> con = clz.getDeclaredConstructor();
-        con.setAccessible(true);
-        return con.newInstance();
-      });
-      for (int i = 0; i < columns.size(); i++) {
-        CsvColumn<?> column = columns.get(i);
-        Object value = line.get(i);
-        if (value == null) {
+    private T construct(Map<CsvColumn<?>, Object> line) throws CsvException {
+      List<Object> args = new ArrayList<>(constructor.getParameterCount());
+      for (CsvColumn<?> column : parameters) {
+        args.add(line.get(column));
+      }
+      T obj;
+      try {
+        obj = constructor.newInstance(args.toArray());
+      } catch (Exception e) {
+        throw new CsvException("Fail to construct " + clz, e);
+      }
+      for (CsvColumn<?> column : columns) {
+        Object value = line.get(column);
+        if (value == null || parameters.contains(column)) {
           continue;
         } else if (injectByCustom(obj, column, value)) {
           debug(format("Set property %s by custom setter.", column.name()));

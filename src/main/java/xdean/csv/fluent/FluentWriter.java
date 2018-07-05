@@ -74,8 +74,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
         CsvColumn<?> column = columns.get(i);
         CsvValueFormatter<Object> formatter = (CsvValueFormatter<Object>) column.formatter();
         int index = sortedColumns.indexOf(column);
-        Object[] args = { value, formatter.type() };
-        CsvException.assertTrue(formatter.type().isInstance(value), "%s is not instance of %s", args);
+        CsvException.assertTrue(formatter.type().isInstance(value), "%s is not instance of %s", value, formatter.type());
         strs[index] = config.escape(formatter.format(value));
       }
     }
@@ -99,8 +98,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
     private final Map<CsvColumn<?>, FuncE1<T, Object, Exception>> annoGetter = new HashMap<>();
 
     public BeanDeconstructor(Class<T> clz) throws CsvException {
-      Object[] args = {};
-      CsvException.assertTrue(uncatch(() -> clz.getDeclaredConstructor()) != null, "Bean must declare no-arg constructor.", args);
+      CsvException.assertTrue(uncatch(() -> clz.getDeclaredConstructor()) != null, "Bean must declare no-arg constructor.");
       this.methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
       this.fields = Arrays.asList(ReflectUtil.getAllFields(clz, false));
       prepare();
@@ -118,10 +116,8 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
             () -> getOrDefault(csv.formatter(), CsvValueFormatter.class, null).newInstance(),
             () -> CsvValueFormatter.toString(type))
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-        Object[] args = { csv };
-        CsvException.assertTrue(toWrapper(f.getType()).isAssignableFrom(type), "Type must extends the field's type: %s", args);
-        Object[] args1 = { csv };
-        CsvException.assertTrue(type.isAssignableFrom(formatter.type()), "CsvValueFormatter is not matched to the type: %s.", args1);
+        CsvException.assertTrue(toWrapper(f.getType()).isAssignableFrom(type), "Type must extends the field's type: %s", csv);
+        CsvException.assertTrue(type.isAssignableFrom(formatter.type()), "CsvValueFormatter is not matched to the type: %s.", csv);
         CsvColumn<?> column = CsvColumn.create(name, formatter);
         if (addColumn(column)) {
           f.setAccessible(true);
@@ -133,8 +129,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
         if (csv == null || m.getParameterCount() != 0 || m.getReturnType() == void.class) {
           continue;
         }
-        Object[] args = { m };
-        CsvException.assertTrue(Modifier.isPublic(m.getModifiers()), "@CSV method must be public. Invalid method: %s", args);
+        CsvException.assertTrue(Modifier.isPublic(m.getModifiers()), "@CSV method must be public. Invalid method: %s", m);
         String name = getOrDefault(csv.name(), "", () -> {
           String n = m.getName();
           if (n.startsWith("get") && n.length() > 3 && Character.isUpperCase(n.charAt(3))) {
@@ -149,10 +144,8 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
             () -> getOrDefault(csv.formatter(), CsvValueFormatter.class, null).newInstance(),
             () -> CsvValueFormatter.toString(type))
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-        Object[] args1 = { csv };
-        CsvException.assertTrue(toWrapper(m.getReturnType()).isAssignableFrom(type), "Type must extends the method parameter type: %s", args1);
-        Object[] args2 = { csv };
-        CsvException.assertTrue(type.isAssignableFrom(parser.type()), "CsvValueFormatter is not matched to the type: %s.", args2);
+        CsvException.assertTrue(toWrapper(m.getReturnType()).isAssignableFrom(type), "Type must extends the method parameter type: %s", csv);
+        CsvException.assertTrue(type.isAssignableFrom(parser.type()), "CsvValueFormatter is not matched to the type: %s.", csv);
         CsvColumn<?> column = CsvColumn.create(name, parser);
         if (addColumn(column)) {
           annoGetter.put(column, obj -> m.invoke(obj));

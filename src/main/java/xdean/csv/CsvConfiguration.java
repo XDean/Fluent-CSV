@@ -2,7 +2,6 @@ package xdean.csv;
 
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -85,16 +84,7 @@ public interface CsvConfiguration extends Fluent<CsvConfiguration>{
    * Create {@link CsvReader} who reads content as
    * {@code Map<CsvColumn, Object>}.
    */
-  default CsvReader<Map<CsvColumn<?>, Object>> readMap() {
-    List<CsvColumn<?>> columns = columns();
-    return readList().mapTo(l -> {
-      Map<CsvColumn<?>, Object> map = new LinkedHashMap<>();
-      for (int i = 0; i < columns.size(); i++) {
-        map.put(columns.get(i), l.get(i));
-      }
-      return map;
-    });
-  }
+  CsvReader<Map<CsvColumn<?>, Object>> readMap();
 
   /**
    * Create {@link CsvBeanReader} who reads content as bean. All
