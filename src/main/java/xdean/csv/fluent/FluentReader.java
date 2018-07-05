@@ -12,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -133,6 +134,7 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
   @SuppressWarnings("unchecked")
   private class BeanConstructor<T> implements CsvBeanReader<T> {
     private final Class<T> clz;
+    private final Constructor<T> constructor;
     private final List<Method> methods;
     private final List<Field> fields;
     private final Map<CsvColumn<?>, BiConsumer<T, Object>> customSetter = new HashMap<>();
@@ -143,10 +145,36 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
       this.clz = clz;
       this.methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
       this.fields = Arrays.asList(ReflectUtil.getAllFields(clz, false));
+      this.constructor = getConstructor();
       prepare();
     }
 
+    private Constructor<T> getConstructor() throws CsvException {
+      Constructor<?> result = null;
+      Constructor<?>[] constructors = clz.getDeclaredConstructors();
+      for (Constructor<?> c : constructors) {
+        if (c.isAnnotationPresent(CSV.class)) {
+          if (result != null) {
+            throw new CsvException("There should be and only be one constructor with @CSV in " + clz);
+          } else {
+            result = c;
+          }
+        }
+      }
+      if (result == null) {
+        try {
+          result = clz.getDeclaredConstructor();
+        } catch (NoSuchMethodException | SecurityException e) {
+          throw new CsvException("There is no @CSV constructor nor no-arg constructor in " + clz);
+        }
+      }
+      result.setAccessible(true);
+      return (Constructor<T>) result;
+    }
+
     private <K> void prepare() throws CsvException {
+      for (Parameter p : constructor.getParameters()) {
+      }
       for (Field f : fields) {
         CSV csv = AnnotationUtils.getAnnotation(f, CSV.class);
         if (csv == null) {
