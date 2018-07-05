@@ -8,7 +8,7 @@
     <version>1.1</version>
   </parent>
   <artifactId>fluent-csv</artifactId>
-  <version>1.1.0</version>
+  <version>1.2.0-SNPASHOT</version>
   <packaging>jar</packaging>
   <url>https://github.com/XDean/fluent-csv</url>
   <name>Fluent CSV</name>
