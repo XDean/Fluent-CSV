@@ -31,7 +31,7 @@ import xdean.jex.log.Logable;
 import xdean.jex.util.reflect.ReflectUtil;
 import xdean.jex.util.string.StringUtil;
 
-public class FluentWriter implements CsvWriter<List<Object>>, Logable {
+public class FluentWriter implements CsvWriter<Map<CsvColumn<?>, Object>>, Logable {
   private final Configuration config;
   private final List<CsvColumn<?>> columns;
   private List<CsvColumn<?>> sortedColumns;
@@ -43,12 +43,12 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
   }
 
   @Override
-  public Flowable<String> from(Flowable<List<Object>> data) {
+  public Flowable<String> from(Flowable<Map<CsvColumn<?>, Object>> data) {
     return data.map(this::format).startWith(getHeader());
   }
 
   @Override
-  public CsvWriter<List<Object>> sort(Comparator<CsvColumn<?>> comparator) {
+  public CsvWriter<Map<CsvColumn<?>, Object>> sort(Comparator<CsvColumn<?>> comparator) {
     sortedColumns = new ArrayList<>(columns);
     sortedColumns.sort(comparator);
     return this;
@@ -65,15 +65,19 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
   }
 
   @SuppressWarnings("unchecked")
-  private String format(List<Object> line) throws CsvException {
+  private String format(Map<CsvColumn<?>, Object> line) throws CsvException {
     String[] strs = new String[columns.size()];
     Arrays.fill(strs, "");
     for (int i = 0; i < columns.size(); i++) {
       if (line.size() > i) {
-        Object value = line.get(i);
         CsvColumn<?> column = columns.get(i);
-        CsvValueFormatter<Object> formatter = (CsvValueFormatter<Object>) column.formatter();
+        Object value = line.get(column);
         int index = sortedColumns.indexOf(column);
+        if (value == null) {
+          strs[index] = "";
+          continue;
+        }
+        CsvValueFormatter<Object> formatter = (CsvValueFormatter<Object>) column.formatter();
         CsvException.assertTrue(formatter.type().isInstance(value), "%s is not instance of %s", value, formatter.type());
         strs[index] = config.escape(formatter.format(value));
       }
@@ -117,7 +121,8 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
             () -> CsvValueFormatter.toString(type))
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
         CsvException.assertTrue(toWrapper(f.getType()).isAssignableFrom(type), "Type must extends the field's type: %s", csv);
-        CsvException.assertTrue(type.isAssignableFrom(formatter.type()), "CsvValueFormatter is not matched to the type: %s.", csv);
+        CsvException.assertTrue(type.isAssignableFrom(formatter.type()), "CsvValueFormatter is not matched to the type: %s.",
+            csv);
         CsvColumn<?> column = CsvColumn.create(name, formatter);
         if (addColumn(column)) {
           f.setAccessible(true);
@@ -144,7 +149,8 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
             () -> getOrDefault(csv.formatter(), CsvValueFormatter.class, null).newInstance(),
             () -> CsvValueFormatter.toString(type))
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-        CsvException.assertTrue(toWrapper(m.getReturnType()).isAssignableFrom(type), "Type must extends the method parameter type: %s", csv);
+        CsvException.assertTrue(toWrapper(m.getReturnType()).isAssignableFrom(type),
+            "Type must extends the method parameter type: %s", csv);
         CsvException.assertTrue(type.isAssignableFrom(parser.type()), "CsvValueFormatter is not matched to the type: %s.", csv);
         CsvColumn<?> column = CsvColumn.create(name, parser);
         if (addColumn(column)) {
@@ -178,8 +184,8 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
       return this;
     }
 
-    public List<Object> deconstruct(T obj) throws CsvException {
-      List<Object> result = new ArrayList<>(columns.size());
+    public Map<CsvColumn<?>, Object> deconstruct(T obj) throws CsvException {
+      Map<CsvColumn<?>, Object> result = new HashMap<>();
       for (CsvColumn<?> column : columns) {
         Object value;
         if ((value = getByCustom(obj, column)) != null) {
@@ -193,7 +199,7 @@ public class FluentWriter implements CsvWriter<List<Object>>, Logable {
         } else {
           throw new CsvException("Can't find property for %s.", column);
         }
-        result.add(value);
+        result.put(column, value);
       }
       return result;
     }

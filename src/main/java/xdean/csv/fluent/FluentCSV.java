@@ -4,6 +4,7 @@ import static xdean.csv.fluent.Util.findColumn;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -109,6 +110,17 @@ public class FluentCSV implements CsvConfiguration, Logable {
 
   @Override
   public CsvWriter<List<Object>> writeList() {
+    return new FluentWriter(this).mapFrom(l -> {
+      Map<CsvColumn<?>, Object> map = new HashMap<>();
+      for (int i = 0; i < l.size(); i++) {
+        map.put(columns.get(i), l.get(i));
+      }
+      return map;
+    });
+  }
+
+  @Override
+  public CsvWriter<Map<CsvColumn<?>, Object>> writeMap() {
     return new FluentWriter(this);
   }
 
