@@ -108,7 +108,7 @@ public class CsvReaderTest {
         .from("")
         .test()
         .assertError(CsvException.class)
-        .assertErrorMessage("Bean must declare no-arg constructor.");
+        .assertError(t -> t.getMessage().contains("There is no @CSV constructor nor no-arg constructo"));
   }
 
   @Test
