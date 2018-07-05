@@ -1,6 +1,7 @@
 package xdean.csv.annotation;
 
-import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.ElementType.CONSTRUCTOR;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -15,13 +16,19 @@ import xdean.csv.CsvValueFormatter;
 import xdean.csv.CsvValueParser;
 
 /**
- * Indicate the element is a CSV column.
+ * If annotated on field or method, indicate the element is a CSV column.
+ * 
+ * If annotated on constructor, indicate the constructor is the primary constructor. If no
+ * constructor annotated with {@code @CSV}, no-arg constructor will be used. For the constructor
+ * parameters, default {@code @CSV} will be used if there is not annotated {@code @CSV}.
+ * 
+ * Notice if a field is also a constructor parameter, only annotated on the parameter is enough.
  *
  * @author Dean Xu (XDean@github.com)
  */
 @Documented
 @Retention(RUNTIME)
-@Target({ FIELD, METHOD, ANNOTATION_TYPE })
+@Target({ FIELD, METHOD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER })
 public @interface CSV {
 
   /**
@@ -41,6 +48,7 @@ public @interface CSV {
    * <li>If it's other method, the default name is the method name.</li>
    * </ul>
    * </li>
+   * <li>If on constructor's parameter, the default name is parameter name.</li>
    * </ul>
    */
   @AliasFor("value")
@@ -53,6 +61,7 @@ public @interface CSV {
    * <li>If on field, the default type is field type.</li>
    * <li>If on getter, the default type is the return type.</li>
    * <li>If on setter, the default type is parameter type.</li>
+   * <li>If on constructor's parameter, the default type is parameter type</li>
    * </ul>
    */
   Class<?> type() default void.class;
