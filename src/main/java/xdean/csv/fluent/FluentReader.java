@@ -141,7 +141,8 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
     private final Map<CsvColumn<?>, ActionE2<T, Object, Exception>> annoSetter = new HashMap<>();
 
     public BeanConstructor(Class<T> clz) throws CsvException {
-      assertTrue(uncatch(() -> clz.getDeclaredConstructor()) != null, "Bean must declare no-arg constructor.");
+      Object[] args = {};
+      CsvException.assertTrue(uncatch(() -> clz.getDeclaredConstructor()) != null, "Bean must declare no-arg constructor.", args);
       this.clz = clz;
       this.methods = Arrays.asList(ReflectUtil.getAllMethods(clz));
       this.fields = Arrays.asList(ReflectUtil.getAllFields(clz, false));
@@ -186,8 +187,10 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
             () -> getOrDefault(csv.parser(), CsvValueParser.class, null).newInstance(),
             () -> CsvValueParser.forType(type))
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-        assertTrue(toWrapper(f.getType()).isAssignableFrom(type), "Type must extends the field's type: %s", csv);
-        assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", csv);
+        Object[] args = { csv };
+        CsvException.assertTrue(toWrapper(f.getType()).isAssignableFrom(type), "Type must extends the field's type: %s", args);
+        Object[] args1 = { csv };
+        CsvException.assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", args1);
         String defaultStr = csv.defaultValue();
         Supplier<K> defaultSupplier;
         if (defaultStr.equals("defaultValue")) {
@@ -208,8 +211,10 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
         if (csv == null) {
           continue;
         }
-        assertTrue(m.getParameterCount() == 1, "@CSV method must have only one paramter: %s", m);
-        assertTrue(Modifier.isPublic(m.getModifiers()), "@CSV method must be public. Invalid method: %s", m);
+        Object[] args = { m };
+        CsvException.assertTrue(m.getParameterCount() == 1, "@CSV method must have only one paramter: %s", args);
+        Object[] args1 = { m };
+        CsvException.assertTrue(Modifier.isPublic(m.getModifiers()), "@CSV method must be public. Invalid method: %s", args1);
         String name = getOrDefault(csv.name(), "", () -> {
           String n = m.getName();
           if (n.startsWith("set") && n.length() > 3 && Character.isUpperCase(n.charAt(3))) {
@@ -222,9 +227,10 @@ public class FluentReader implements CsvReader<List<Object>>, Logable {
             () -> getOrDefault(csv.parser(), CsvValueParser.class, null).newInstance(),
             () -> CsvValueParser.forType(type))
                 .orElseThrow(() -> new CsvException("Can't construct CsvValueParser from %s.", csv));
-        assertTrue(toWrapper(m.getParameterTypes()[0]).isAssignableFrom(type), "Type must extends the method parameter type: %s",
-            csv);
-        assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", csv);
+        Object[] args2 = { csv };
+        CsvException.assertTrue(toWrapper(m.getParameterTypes()[0]).isAssignableFrom(type), "Type must extends the method parameter type: %s", args2);
+        Object[] args3 = { csv };
+        CsvException.assertTrue(type.isAssignableFrom(parser.type()), "CsvValueParser is not matched to the type: %s.", args3);
         String defaultStr = csv.defaultValue();
         Supplier<K> defaultSupplier;
         if (defaultStr.equals("defaultValue")) {
