@@ -1,11 +1,8 @@
 package xdean.csv;
 
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import xdean.csv.CsvReader.CsvBeanReader;
 import xdean.csv.CsvWriter.CsvBeanWriter;
@@ -18,7 +15,7 @@ import xdean.fluent.Fluent;
  * @author Dean Xu (XDean@github.com)
  *
  */
-public interface CsvConfiguration extends Fluent<CsvConfiguration>{
+public interface CsvConfiguration extends Fluent<CsvConfiguration> {
 
   char NO_QUOTER = '\u0000';
 
@@ -32,8 +29,8 @@ public interface CsvConfiguration extends Fluent<CsvConfiguration>{
   CsvConfiguration escaper(char escaper);
 
   /**
-   * Quote character, Default value is {@link #DEFAULT_QUOTER}. In quotation,
-   * only quote character and escape character should be escaped.
+   * Quote character, Default value is {@link #DEFAULT_QUOTER}. In quotation, only quote character
+   * and escape character should be escaped.
    */
   CsvConfiguration quoter(char quoter);
 
@@ -46,8 +43,8 @@ public interface CsvConfiguration extends Fluent<CsvConfiguration>{
   /**
    * Ignore leading space or not.
    *
-   * @apiNote CSV file usually add space after splitor for beauty. Use this
-   *          option to ignore it. But space in quote will not be ignored.
+   * @apiNote CSV file usually add space after splitor for beauty. Use this option to ignore it. But
+   *          space in quote will not be ignored.
    */
   CsvConfiguration ignoreLeadingSpace(boolean b);
 
@@ -76,29 +73,19 @@ public interface CsvConfiguration extends Fluent<CsvConfiguration>{
   /********************************** Read ************************************/
 
   /**
-   * Create {@link CsvReader} who reads content as {@code List<Object}. The
-   * objects in the list have the same order with {@link #columns()}(add order).
+   * Create {@link CsvReader} who reads content as {@code List<Object}. The objects in the list have
+   * the same order with {@link #columns()}(add order).
    */
   CsvReader<List<Object>> readList();
 
   /**
-   * Create {@link CsvReader} who reads content as
-   * {@code Map<CsvColumn, Object>}.
+   * Create {@link CsvReader} who reads content as {@code Map<CsvColumn, Object>}.
    */
-  default CsvReader<Map<CsvColumn<?>, Object>> readMap() {
-    List<CsvColumn<?>> columns = columns();
-    return readList().mapTo(l -> {
-      Map<CsvColumn<?>, Object> map = new LinkedHashMap<>();
-      for (int i = 0; i < columns.size(); i++) {
-        map.put(columns.get(i), l.get(i));
-      }
-      return map;
-    });
-  }
+  CsvReader<Map<CsvColumn<?>, Object>> readMap();
 
   /**
-   * Create {@link CsvBeanReader} who reads content as bean. All
-   * &#64;{@link CSV} information will be loaded.
+   * Create {@link CsvBeanReader} who reads content as bean. All &#64;{@link CSV} information will
+   * be loaded.
    */
   <T> CsvBeanReader<T> readBean(Class<T> bean);
 
@@ -107,25 +94,19 @@ public interface CsvConfiguration extends Fluent<CsvConfiguration>{
    ************************************/
 
   /**
-   * Create {@link CsvWriter} who writes content as {@code List<Object}. The
-   * objects in the list should have the same order with {@link #columns()}(add
-   * order).
+   * Create {@link CsvWriter} who writes content as {@code List<Object}. The objects in the list
+   * should have the same order with {@link #columns()}(add order).
    */
   CsvWriter<List<Object>> writeList();
 
   /**
-   * Create {@link CsvWriter} who writes content as
-   * {@code Map<CsvColumn, Object>}.
+   * Create {@link CsvWriter} who writes content as {@code Map<CsvColumn, Object>}.
    */
-  default CsvWriter<Map<CsvColumn<?>, Object>> writeMap() {
-    List<CsvColumn<?>> columns = columns();
-    return writeList().<Map<CsvColumn<?>, Object>> mapFrom(
-        m -> m.values().stream().sorted(Comparator.comparing(columns::indexOf)).collect(Collectors.toList()));
-  }
+  CsvWriter<Map<CsvColumn<?>, Object>> writeMap();
 
   /**
-   * Create {@link CsvBeanWriter} who reads content as bean. All
-   * &#64;{@link CSV} information will be loaded.
+   * Create {@link CsvBeanWriter} who reads content as bean. All &#64;{@link CSV} information will
+   * be loaded.
    */
   <T> CsvBeanWriter<T> writeBean(Class<T> bean);
 }

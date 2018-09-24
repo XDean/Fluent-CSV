@@ -3,7 +3,11 @@ package xdean.csv.fluent;
 import static xdean.csv.fluent.Util.findColumn;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.core.annotation.AnnotationUtils;
 
@@ -84,6 +88,14 @@ public class FluentCSV implements CsvConfiguration, Logable {
 
   @Override
   public CsvReader<List<Object>> readList() {
+    return new FluentReader(this).mapTo(m -> m.entrySet().stream()
+        .sorted(Comparator.comparing(e -> columns.indexOf(e.getKey())))
+        .map(e -> e.getValue())
+        .collect(Collectors.toList()));
+  }
+
+  @Override
+  public CsvReader<Map<CsvColumn<?>, Object>> readMap() {
     return new FluentReader(this);
   }
 
@@ -98,6 +110,17 @@ public class FluentCSV implements CsvConfiguration, Logable {
 
   @Override
   public CsvWriter<List<Object>> writeList() {
+    return new FluentWriter(this).mapFrom(l -> {
+      Map<CsvColumn<?>, Object> map = new HashMap<>();
+      for (int i = 0; i < l.size(); i++) {
+        map.put(columns.get(i), l.get(i));
+      }
+      return map;
+    });
+  }
+
+  @Override
+  public CsvWriter<Map<CsvColumn<?>, Object>> writeMap() {
     return new FluentWriter(this);
   }
 

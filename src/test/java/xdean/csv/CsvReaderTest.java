@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -29,9 +30,9 @@ import xdean.csv.annotation.CsvConfig;
 import xdean.csv.fluent.FluentCSV;
 
 public class CsvReaderTest {
-  private static final Person dean = new Person(1, "DEAN", 100, House.NO, "");
-  private static final Person wenzhe = new Person(2, "WEN-ZHE", 888, House.YES, "");
-  private static final Person xian = new Person(3, "XIAN", 998, House.YES, "manager");
+  private static final Person dean = new Person(1, "DEAN", 100, House.NO, "", false);
+  private static final Person wenzhe = new Person(2, "WEN-ZHE", 888, House.YES, "", false);
+  private static final Person xian = new Person(3, "XIAN", 998, House.YES, "manager", false);
 
   CsvConfiguration reader;
   Path golden;
@@ -108,7 +109,7 @@ public class CsvReaderTest {
         .from("")
         .test()
         .assertError(CsvException.class)
-        .assertErrorMessage("Bean must declare no-arg constructor.");
+        .assertError(t -> t.getMessage().contains("There is no @CSV constructor nor no-arg constructo"));
   }
 
   @Test
@@ -234,6 +235,7 @@ public class CsvReaderTest {
         .assertError(e -> e.getMessage().contains("cannot be escaped"));
   }
 
+  @Ignore
   @Test
   public void testWrongMethod() throws Exception {
     reader.readBean(WrongMethod.class)
@@ -361,7 +363,6 @@ public class CsvReaderTest {
   }
 
   @Data
-  @NoArgsConstructor
   @AllArgsConstructor
   public static class Person {
     public enum House {
@@ -382,6 +383,13 @@ public class CsvReaderTest {
 
     @CSV(defaultValue = "")
     String extra;
+
+    boolean absent;
+
+    @CSV
+    public Person(@CSV(optional = true, defaultValue = "false") boolean absent) {
+      this.absent = absent;
+    }
 
     @CSV(name = "has_house")
     public void setHouse(House house) {

@@ -44,4 +44,10 @@ public class CsvException extends Exception {
   public CsvException(String format, Object... args) {
     super(String.format(format, args));
   }
+
+  public static void assertTrue(boolean b, String msg, Object... args) throws CsvException {
+    if (!b) {
+      throw new CsvException(msg, args);
+    }
+  }
 }

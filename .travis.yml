@@ -13,4 +13,3 @@ addons:
 script:
 - mvn clean package sonar:sonar -P jacoco
 after_success:
-- bash <(curl -s https://codecov.io/bash)
